@@ -1251,6 +1251,28 @@ a.reservation-call {
   color: var(--muted);
 }
 
+.tc-close {
+  margin-left: auto;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.tc-close:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--warn-bg);
+}
+
 .tc-timer {
   font-size: 1.4rem;
   font-weight: 700;
@@ -1258,6 +1280,10 @@ a.reservation-call {
   letter-spacing: 0.02em;
   line-height: 1;
   margin: 0.15rem 0;
+}
+
+.tc-timer--over {
+  color: var(--danger);
 }
 
 .tc-meta {

@@ -33,8 +33,10 @@ export default function SystemPage() {
       const coverQty = Math.max(0, Math.floor(Number(t.coverQty) || 0));
       const limitMin = defaultLimit + bonus;
       const elapsed = now - t.timerStartedAt;
-      const over = elapsed >= limitMin * 60 * 1000;
-      return { table, active: true, elapsed, over, limitMin, bonus, coverQty };
+      const limitMs = limitMin * 60 * 1000;
+      const over = elapsed >= limitMs;
+      const remaining = Math.max(0, limitMs - elapsed);
+      return { table, active: true, remaining, over, limitMin, bonus, coverQty };
     });
   }, [state?.tables, defaultLimit, clock]);
 
@@ -54,24 +56,31 @@ export default function SystemPage() {
         </h2>
 
         <div className="table-grid">
-          {tableData.map(({ table, active, elapsed, over, limitMin, bonus, coverQty }) => (
+          {tableData.map(({ table, active, remaining, over, limitMin, bonus, coverQty }) => (
             <div key={table} className={`table-card ${active ? (over ? "table-card--over" : "table-card--active") : "table-card--empty"}`}>
               <div className="tc-header">
                 <span className="tc-num">{table}번</span>
                 <span className={`tc-status ${active ? (over ? "tc-status--over" : "tc-status--active") : "tc-status--empty"}`}>
                   {active ? (over ? "시간초과" : "이용 중") : "빈 테이블"}
                 </span>
+                {active && (
+                  <button
+                    type="button"
+                    className="tc-close"
+                    aria-label="테이블 할당 해제"
+                    onClick={() => socket.emit("system:resetTable", table)}
+                  >✕</button>
+                )}
               </div>
               {active && (
                 <>
-                  <div className="tc-timer">{formatHMS(elapsed)}</div>
+                  <div className={`tc-timer ${over ? "tc-timer--over" : ""}`}>{formatHMS(remaining)}</div>
                   <div className="tc-meta">
                     <span>인원 {coverQty}명</span>
                     <span>제한 {limitMin}분{bonus > 0 ? ` (+${bonus})` : ""}</span>
                   </div>
                   <div className="tc-actions">
                     <button type="button" className="btn-secondary tc-btn" onClick={() => socket.emit("system:extend", table)}>+연장</button>
-                    <button type="button" className="btn-danger tc-btn" onClick={() => socket.emit("system:resetTable", table)}>초기화</button>
                   </div>
                 </>
               )}
