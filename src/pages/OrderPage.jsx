@@ -7,6 +7,7 @@ import { useAppSocket } from "../context/SocketContext.jsx";
 export default function OrderPage() {
   const { socket, connected, state, toast } = useAppSocket();
   const [table, setTable] = useState("");
+  const [partySize, setPartySize] = useState("");
   /** menuId -> 수량 */
   const [quantities, setQuantities] = useState({});
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -39,10 +40,11 @@ export default function OrderPage() {
   const total = useMemo(() => lines.reduce((s, l) => s + l.price * l.qty, 0), [lines]);
 
   const submit = useCallback(() => {
-    socket.emit("order:submit", { table, quantities }, (res) => {
+    socket.emit("order:submit", { table, quantities, partySize }, (res) => {
       if (res?.ok) {
         setQuantities({});
         setTable("");
+        setPartySize("");
         setPaymentModalOpen(false);
       }
     });
@@ -103,19 +105,35 @@ export default function OrderPage() {
         </div>
       )}
       <div className="order-top">
-        <label className="field-label">
-          테이블 번호
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            autoComplete="off"
-            placeholder="예: 5, 12"
-            value={table}
-            onChange={(e) => setTable(e.target.value.replace(/\D/g, ""))}
-            className="field-input wide"
-          />
-        </label>
+        <div className="order-top-fields">
+          <label className="field-label">
+            테이블 번호
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              placeholder="예: 5, 12"
+              value={table}
+              onChange={(e) => setTable(e.target.value.replace(/\D/g, ""))}
+              className="field-input"
+            />
+          </label>
+          <label className="field-label">
+            인원수
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={99}
+              autoComplete="off"
+              placeholder="명"
+              value={partySize}
+              onChange={(e) => setPartySize(e.target.value.replace(/\D/g, ""))}
+              className="field-input"
+            />
+          </label>
+        </div>
         <span className={`conn ${connected ? "ok" : ""}`}>{connected ? "연결됨" : "연결 끊김"}</span>
       </div>
 

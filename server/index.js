@@ -34,7 +34,7 @@ const io = new Server(server, {
 /** @typedef {{ id: string, table: string, items: OrderLine[], createdAt: number }} KitchenOrder */
 
 /** @type {{ timerStartedAt: number | null, bonusLimitMinutes: number, coverQty: number }} */
-const defaultTableState = () => ({ timerStartedAt: null, bonusLimitMinutes: 0, coverQty: 0 });
+const defaultTableState = () => ({ timerStartedAt: null, bonusLimitMinutes: 0, coverQty: 0, partySize: 0 });
 
 /** 서버 단일 상태 */
 const state = {
@@ -85,6 +85,7 @@ function getSnapshot() {
             timerStartedAt: v.timerStartedAt,
             bonusLimitMinutes: bonus,
             coverQty: Math.max(0, Math.floor(Number(v.coverQty) || 0)),
+            partySize: Math.max(0, Math.floor(Number(v.partySize) || 0)),
           },
         ];
       })
@@ -171,7 +172,7 @@ function recordSalesFromItems(items) {
 /**
  * 주문 접수: 주방 큐 추가. 타이머는 해당 테이블에 처음 주문이 들어올 때만 시작(추가 주문은 타이머 건드리지 않음).
  */
-function submitOrder(tableRaw, items) {
+function submitOrder(tableRaw, items, partySize) {
   const table = String(tableRaw).trim();
   if (!table) return { ok: false, error: "테이블 번호를 입력하세요." };
   if (!items.length) return { ok: false, error: "주문할 메뉴를 선택하세요." };
@@ -197,6 +198,10 @@ function submitOrder(tableRaw, items) {
     ts.coverQty = Math.max(0, Math.floor(Number(ts.coverQty) || 0)) + coverAdded;
   }
 
+  if (partySize > 0) {
+    ts.partySize = partySize;
+  }
+
   const kitchenItems = items.filter((it) => it.menuId !== COVER_MENU_ID);
   if (kitchenItems.length > 0) {
     const flatLines = expandKitchenLines(kitchenItems);
@@ -220,14 +225,15 @@ io.on("connection", (socket) => {
   socket.emit("state", getSnapshot());
 
   socket.on("order:submit", (payload, ack) => {
-    const { table, quantities } = payload || {};
+    const { table, quantities, partySize } = payload || {};
     const q = quantities && typeof quantities === "object" ? quantities : {};
+    const ps = Math.max(0, Math.floor(Number(partySize) || 0));
     const items = [];
     for (const m of MENU_LIST) {
       const qty = Math.max(0, Math.floor(Number(q[m.id]) || 0));
       if (qty > 0) items.push({ menuId: m.id, name: m.name, price: m.price, qty });
     }
-    const res = submitOrder(table, items);
+    const res = submitOrder(table, items, ps);
     if (res.ok) broadcastState();
     if (typeof ack === "function") ack(res);
     if (!res.ok && res.error) socket.emit("error:toast", res.error);
