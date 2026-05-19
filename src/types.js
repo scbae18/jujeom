@@ -4,7 +4,7 @@
  * @typedef {{ id: string, name: string, partySize: number, phone: string, createdAt: number }} Reservation
  * @typedef {{ menuId: number, name: string, price: number, qty: number, done?: boolean, lineKey?: string | null }} OrderLine
  * @typedef {{ id: string, table: string, items: OrderLine[], createdAt: number }} KitchenOrder
- * @typedef {{ timerStartedAt: number | null, bonusLimitMinutes?: number, coverQty?: number }} TableState
+ * @typedef {{ timerStartedAt: number | null, bonusLimitMinutes?: number, coverQty?: number, partySize?: number }} TableState
  * @typedef {{ menuId: number, name: string, category: string, qty: number, revenue: number }} SalesMenuLine
  * @typedef {{
  *   menuLines: SalesMenuLine[],
