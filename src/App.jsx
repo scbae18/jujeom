@@ -3,6 +3,7 @@ import { SocketProvider } from "./context/SocketContext.jsx";
 import OrderPage from "./pages/OrderPage.jsx";
 import KitchenPage from "./pages/KitchenPage.jsx";
 import SystemPage from "./pages/SystemPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
 import ReservePage from "./pages/ReservePage.jsx";
 import ReservationsPage from "./pages/ReservationsPage.jsx";
@@ -18,6 +19,7 @@ function AppShell() {
   const wideLayout =
     pathname === "/kitchen" ||
     pathname === "/system" ||
+    pathname === "/settings" ||
     pathname === "/stats" ||
     pathname === "/reservations" ||
     pathname === "/reset";
@@ -34,7 +36,10 @@ function AppShell() {
             주방
           </NavLink>
           <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/system">
-            시스템
+            테이블 현황
+          </NavLink>
+          <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/settings">
+            설정
           </NavLink>
           <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/stats">
             매출
@@ -52,6 +57,7 @@ function AppShell() {
           <Route path="/" element={<OrderPage />} />
           <Route path="/kitchen" element={<KitchenPage />} />
           <Route path="/system" element={<SystemPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reset" element={<ResetAllPage />} />

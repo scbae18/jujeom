@@ -23,19 +23,6 @@ export default function SystemPage() {
   }, []);
 
   const defaultLimit = state?.settings?.defaultLimitMinutes ?? 90;
-  const extensionM = state?.settings?.extensionMinutes ?? 60;
-  const [defaultInput, setDefaultInput] = useState(String(defaultLimit));
-  const [extensionInput, setExtensionInput] = useState(String(extensionM));
-
-  useEffect(() => {
-    if (state?.settings?.defaultLimitMinutes != null)
-      setDefaultInput(String(state.settings.defaultLimitMinutes));
-  }, [state?.settings?.defaultLimitMinutes]);
-
-  useEffect(() => {
-    if (state?.settings?.extensionMinutes != null)
-      setExtensionInput(String(state.settings.extensionMinutes));
-  }, [state?.settings?.extensionMinutes]);
 
   const tableData = useMemo(() => {
     const now = Date.now();
@@ -59,28 +46,6 @@ export default function SystemPage() {
         <h1 className="system-h1">시스템 / 타이머</h1>
         <span className={`conn large ${connected ? "ok" : ""}`}>{connected ? "연결됨" : "연결 끊김"}</span>
       </div>
-
-      <section className="system-settings">
-        <h2 className="section-title large">설정</h2>
-        <div className="settings-grid">
-          <label className="field-label">
-            기본 제한 시간 (분)
-            <p className="muted small flush">첫 주문 후 이 시간을 넘기면 경고합니다.</p>
-            <div className="inline-row">
-              <input type="number" min={1} max={999} value={defaultInput} onChange={(e) => setDefaultInput(e.target.value)} className="field-input narrow" />
-              <button type="button" className="btn-secondary" onClick={() => socket.emit("system:setDefaultLimitMinutes", defaultInput)}>적용</button>
-            </div>
-          </label>
-          <label className="field-label">
-            연장 시간 (분)
-            <p className="muted small flush">「+연장」 한 번당 제한 시간에 더해집니다. 타이머는 유지됩니다.</p>
-            <div className="inline-row">
-              <input type="number" min={1} max={999} value={extensionInput} onChange={(e) => setExtensionInput(e.target.value)} className="field-input narrow" />
-              <button type="button" className="btn-secondary" onClick={() => socket.emit("system:setExtensionMinutes", extensionInput)}>적용</button>
-            </div>
-          </label>
-        </div>
-      </section>
 
       <section className="tables-section">
         <h2 className="section-title large tables-section-title">

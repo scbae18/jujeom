@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
 function formatTime(ts) {
@@ -6,13 +5,8 @@ function formatTime(ts) {
   return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-/**
- * 주방 화면: 주문 카드, 메뉴별 조리 완료, 품절 토글
- */
 export default function KitchenPage() {
   const { socket, connected, state } = useAppSocket();
-  const menu = state?.menu ?? [];
-  const soldSet = useMemo(() => new Set(state?.soldOutIds ?? []), [state?.soldOutIds]);
   const queue = state?.kitchenQueue ?? [];
 
   return (
@@ -21,27 +15,6 @@ export default function KitchenPage() {
         <h1 className="kitchen-h1">주방</h1>
         <span className={`conn large ${connected ? "ok" : ""}`}>{connected ? "실시간 연결" : "끊김"}</span>
       </div>
-
-      <section className="soldout-panel">
-        <h2 className="section-title large">품절 설정</h2>
-        <p className="muted kitchen-hint">버튼을 누르면 주문서에 즉시 반영됩니다.</p>
-        <div className="soldout-grid">
-          {menu.map((m) => {
-            const on = soldSet.has(m.id);
-            return (
-              <button
-                key={m.id}
-                type="button"
-                className={`soldout-btn ${on ? "on" : ""}`}
-                onClick={() => socket.emit("kitchen:soldOut:toggle", m.id)}
-              >
-                <span className="soldout-name">{m.name}</span>
-                <span className="soldout-flag">{on ? "품절" : "판매중"}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
 
       <section className="queue-section">
         <h2 className="section-title large">접수 주문</h2>
