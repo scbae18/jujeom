@@ -1,9 +1,11 @@
 /**
  * 메뉴 목록 — 운영 시 이 배열만 수정하면 됩니다.
- * addonOnly: true → 메인·사이드(주문서에서 「첫 주문 후」 배지용).
+ * addonOnly: true → 메인·사이드 등(주문서에서 「첫 주문 후」 배지용).
+ * hideFirstOrderBadge: true → 해당 배지 없음(자릿세).
  * kitchenParts: 세트만. 주방에서는 이 이름들로 각각 조리 완료 줄이 생김.
+ * 자릿세(COVER_MENU_ID): 주방 조리 없음·시스템 인원(자릿세 수량 합) 집계.
  */
-export const COVER_MENU_ID = null;
+export const COVER_MENU_ID = 11;
 
 export const MENU_LIST = [
   /* 세트 — kitchenParts: 주방에서 조리 완료를 메뉴별로 나누어 표시 */
@@ -19,6 +21,8 @@ export const MENU_LIST = [
   { id: 9, name: "오지치즈 후라이", price: 11000, category: "메인", addonOnly: true },
   /* 사이드 — 추가 주문용 */
   { id: 10, name: "주먹밥", price: 8000, category: "사이드", addonOnly: true },
+  /* 기타 */
+  { id: COVER_MENU_ID, name: "자릿세", price: 5000, category: "기타", addonOnly: true, hideFirstOrderBadge: true },
 ];
 
 /**
