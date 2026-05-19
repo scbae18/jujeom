@@ -75,10 +75,9 @@ select:focus {
 /* —— 레이아웃 / 공통 —— */
 .app-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1rem;
-  padding: 0.65rem 1rem;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -86,24 +85,41 @@ select:focus {
   z-index: 10;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .app-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   letter-spacing: -0.02em;
+  flex: 1;
 }
 
 .app-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-left: auto;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.app-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-a {
-  padding: 0.45rem 0.85rem;
+  padding: 0.4rem 0.75rem;
   border-radius: 8px;
   color: var(--muted);
   text-decoration: none;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.9rem;
 }
 
 .nav-a:hover {
@@ -1311,4 +1327,103 @@ a.reservation-call {
   flex: 1;
   font-size: 0.8rem;
   padding: 0.4rem 0.35rem;
+}
+
+/* ====================================================
+   반응형 — 모바일 우선
+   ==================================================== */
+
+/* 태블릿 이상: 헤더 한 줄 레이아웃 복원 */
+@media (min-width: 640px) {
+  .app-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
+  }
+
+  .app-header-row {
+    flex: none;
+  }
+
+  .app-title {
+    flex: none;
+  }
+
+  .app-nav {
+    margin-left: auto;
+    overflow-x: visible;
+    flex-wrap: wrap;
+    padding-bottom: 0;
+  }
+
+  .nav-a {
+    padding: 0.45rem 0.85rem;
+    font-size: 1rem;
+  }
+}
+
+/* 소형 모바일 (≤ 400px): 카드·패딩 추가 축소 */
+@media (max-width: 400px) {
+  html {
+    font-size: 14px;
+  }
+
+  .app-main {
+    padding: 0.65rem;
+  }
+
+  .table-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.45rem;
+  }
+
+  .kitchen-grid {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 0.45rem;
+  }
+
+  .tc-timer {
+    font-size: 1.15rem;
+  }
+}
+
+/* 터치 타겟: 모바일 전반 */
+@media (max-width: 640px) {
+  .app-main {
+    padding: 0.75rem;
+  }
+
+  /* 수량 버튼 — 최소 44px 터치 영역 */
+  .qty-controls button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  /* 주방 완료 버튼 */
+  .kc-btn-done {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  /* 테이블 카드 액션 버튼 */
+  .tc-btn {
+    padding: 0.45rem 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .tc-close {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+
+  /* 주문서 푸터 */
+  .btn-primary {
+    padding: 0.85rem 1.25rem;
+  }
+
+  /* 설정 패널 */
+  .system-settings {
+    padding: 0.85rem;
+  }
 }

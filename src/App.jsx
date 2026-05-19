@@ -27,7 +27,9 @@ function AppShell() {
   return (
     <>
       <header className="app-header">
-        <strong className="app-title">주점 주문</strong>
+        <div className="app-header-row">
+          <strong className="app-title">주점 주문</strong>
+        </div>
         <nav className="app-nav">
           <NavLink end className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/">
             주문서
