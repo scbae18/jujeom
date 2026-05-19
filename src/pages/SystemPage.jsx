@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
-function formatElapsed(ms) {
+const ALL_TABLES = Array.from({ length: 40 }, (_, i) => String(i + 1));
+
+function formatHMS(ms) {
   if (ms < 0) ms = 0;
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  if (h > 0) return `${h}시간 ${m}분`;
-  return `${m}분`;
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(h)}:${p(m)}:${p(sec)}`;
 }
 
-/**
- * 시스템/타이머 화면: 테이블별 경과 시간, 기본/연장 시간 설정, 수동 연장·초기화
- */
 export default function SystemPage() {
   const { socket, connected, state } = useAppSocket();
   const [clock, setClock] = useState(0);
@@ -24,50 +24,34 @@ export default function SystemPage() {
 
   const defaultLimit = state?.settings?.defaultLimitMinutes ?? 90;
   const extensionM = state?.settings?.extensionMinutes ?? 60;
-
-  const tables = useMemo(() => {
-    const entries = Object.entries(state?.tables ?? {});
-    const now = Date.now();
-    const rows = entries.map(([table, t]) => {
-      const start = t.timerStartedAt;
-      const bonus = Math.max(0, Math.floor(Number(t.bonusLimitMinutes) || 0));
-      const coverQty = Math.max(0, Math.floor(Number(t.coverQty) || 0));
-      const limitMin = defaultLimit + bonus;
-      const limitMs = limitMin * 60 * 1000;
-      const elapsed = start != null ? now - start : 0;
-      const over = start != null && elapsed >= limitMs;
-      /** 남은 시간(ms). 초과 시 음수, 타이머 미시작은 맨 아래로 */
-      const remainingMs = start != null ? limitMs - elapsed : Number.POSITIVE_INFINITY;
-      return { table, start, elapsed, over, limitMin, bonus, coverQty, remainingMs };
-    });
-    rows.sort((a, b) => {
-      if (a.remainingMs !== b.remainingMs) return a.remainingMs - b.remainingMs;
-      return String(a.table).localeCompare(String(b.table), "ko");
-    });
-    return rows;
-  }, [state?.tables, defaultLimit, clock]);
-
   const [defaultInput, setDefaultInput] = useState(String(defaultLimit));
   const [extensionInput, setExtensionInput] = useState(String(extensionM));
-  const [tableSearch, setTableSearch] = useState("");
-
-  const filteredTables = useMemo(() => {
-    const q = tableSearch.trim().toLowerCase();
-    if (!q) return tables;
-    return tables.filter((row) => String(row.table).toLowerCase().includes(q));
-  }, [tables, tableSearch]);
 
   useEffect(() => {
-    if (state?.settings?.defaultLimitMinutes != null) {
+    if (state?.settings?.defaultLimitMinutes != null)
       setDefaultInput(String(state.settings.defaultLimitMinutes));
-    }
   }, [state?.settings?.defaultLimitMinutes]);
 
   useEffect(() => {
-    if (state?.settings?.extensionMinutes != null) {
+    if (state?.settings?.extensionMinutes != null)
       setExtensionInput(String(state.settings.extensionMinutes));
-    }
   }, [state?.settings?.extensionMinutes]);
+
+  const tableData = useMemo(() => {
+    const now = Date.now();
+    return ALL_TABLES.map((table) => {
+      const t = state?.tables?.[table];
+      if (!t || t.timerStartedAt == null) return { table, active: false };
+      const bonus = Math.max(0, Math.floor(Number(t.bonusLimitMinutes) || 0));
+      const coverQty = Math.max(0, Math.floor(Number(t.coverQty) || 0));
+      const limitMin = defaultLimit + bonus;
+      const elapsed = now - t.timerStartedAt;
+      const over = elapsed >= limitMin * 60 * 1000;
+      return { table, active: true, elapsed, over, limitMin, bonus, coverQty };
+    });
+  }, [state?.tables, defaultLimit, clock]);
+
+  const activeCount = tableData.filter((t) => t.active).length;
 
   return (
     <div className="page system-page">
@@ -81,103 +65,54 @@ export default function SystemPage() {
         <div className="settings-grid">
           <label className="field-label">
             기본 제한 시간 (분)
-            <p className="muted small flush">테이블 첫 주문 후, 이 시간을 넘기면 경고합니다.</p>
+            <p className="muted small flush">첫 주문 후 이 시간을 넘기면 경고합니다.</p>
             <div className="inline-row">
-              <input
-                type="number"
-                min={1}
-                max={999}
-                value={defaultInput}
-                onChange={(e) => setDefaultInput(e.target.value)}
-                className="field-input narrow"
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => socket.emit("system:setDefaultLimitMinutes", defaultInput)}
-              >
-                적용
-              </button>
+              <input type="number" min={1} max={999} value={defaultInput} onChange={(e) => setDefaultInput(e.target.value)} className="field-input narrow" />
+              <button type="button" className="btn-secondary" onClick={() => socket.emit("system:setDefaultLimitMinutes", defaultInput)}>적용</button>
             </div>
           </label>
           <label className="field-label">
             연장 시간 (분)
-            <p className="muted small flush">「시간 연장」 한 번 클릭할 때마다, 그 테이블의 허용 제한 시간에 이 값(분)이 더해집니다. 경과 시간(타이머)은 초기화되지 않습니다.</p>
+            <p className="muted small flush">「+연장」 한 번당 제한 시간에 더해집니다. 타이머는 유지됩니다.</p>
             <div className="inline-row">
-              <input
-                type="number"
-                min={1}
-                max={999}
-                value={extensionInput}
-                onChange={(e) => setExtensionInput(e.target.value)}
-                className="field-input narrow"
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => socket.emit("system:setExtensionMinutes", extensionInput)}
-              >
-                적용
-              </button>
+              <input type="number" min={1} max={999} value={extensionInput} onChange={(e) => setExtensionInput(e.target.value)} className="field-input narrow" />
+              <button type="button" className="btn-secondary" onClick={() => socket.emit("system:setExtensionMinutes", extensionInput)}>적용</button>
             </div>
           </label>
         </div>
-        <p className="muted small">
-          추가 주문으로 타이머는 자동으로 바뀌지 않습니다. 테이블별 연장·초기화는 아래에서 하세요. 매장 전체 데이터를 비우려면 상단 메뉴의
-          「전체 초기화」 화면을 이용하세요.
-        </p>
       </section>
 
       <section className="tables-section">
-        <div className="tables-section-head">
-          <h2 className="section-title large tables-section-title">사용 중 테이블</h2>
-          <label className="field-label tables-search-label">
-            <span className="tables-search-caption">테이블 검색</span>
-            <input
-              type="search"
-              inputMode="search"
-              autoComplete="off"
-              placeholder="번호 입력"
-              value={tableSearch}
-              onChange={(e) => setTableSearch(e.target.value)}
-              className="field-input tables-search-input"
-            />
-          </label>
+        <h2 className="section-title large tables-section-title">
+          테이블 현황
+          <span className="tc-count-badge">{activeCount} / 40 이용 중</span>
+        </h2>
+
+        <div className="table-grid">
+          {tableData.map(({ table, active, elapsed, over, limitMin, bonus, coverQty }) => (
+            <div key={table} className={`table-card ${active ? (over ? "table-card--over" : "table-card--active") : "table-card--empty"}`}>
+              <div className="tc-header">
+                <span className="tc-num">{table}번</span>
+                <span className={`tc-status ${active ? (over ? "tc-status--over" : "tc-status--active") : "tc-status--empty"}`}>
+                  {active ? (over ? "시간초과" : "이용 중") : "빈 테이블"}
+                </span>
+              </div>
+              {active && (
+                <>
+                  <div className="tc-timer">{formatHMS(elapsed)}</div>
+                  <div className="tc-meta">
+                    <span>인원 {coverQty}명</span>
+                    <span>제한 {limitMin}분{bonus > 0 ? ` (+${bonus})` : ""}</span>
+                  </div>
+                  <div className="tc-actions">
+                    <button type="button" className="btn-secondary tc-btn" onClick={() => socket.emit("system:extend", table)}>+연장</button>
+                    <button type="button" className="btn-danger tc-btn" onClick={() => socket.emit("system:resetTable", table)}>초기화</button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
         </div>
-        {tables.length === 0 ? (
-          <p className="muted">등록된 테이블이 없습니다. 주문서에서 주문이 들어오면 표시됩니다.</p>
-        ) : filteredTables.length === 0 ? (
-          <p className="muted">「{tableSearch.trim()}」에 해당하는 테이블이 없습니다.</p>
-        ) : (
-          <ul className="table-timers">
-            {filteredTables.map(({ table, elapsed, over, start, limitMin, bonus, coverQty }) => (
-              <li key={table} className={`table-timer-row ${over ? "over" : ""} ${start == null ? "idle" : ""}`}>
-                <div className="timer-main">
-                  <span className="table-name-lg">{table}</span>
-                  <span className="elapsed-lg">{start != null ? formatElapsed(elapsed) : "타이머 대기"}</span>
-                  <span className="table-headcount muted" title="해당 테이블에 접수된 자릿세 수량 합">
-                    인원 {coverQty}명
-                  </span>
-                  {start != null && (
-                    <span className="limit-hint muted">
-                      허용 {limitMin}분
-                      {bonus > 0 ? ` (기본 ${defaultLimit} + 연장 누적 ${bonus})` : ""}
-                    </span>
-                  )}
-                  {over && <span className="warn-label">제한 시간 초과</span>}
-                </div>
-                <div className="timer-actions">
-                  <button type="button" className="btn-secondary" onClick={() => socket.emit("system:extend", table)}>
-                    시간 연장
-                  </button>
-                  <button type="button" className="btn-danger" onClick={() => socket.emit("system:resetTable", table)}>
-                    테이블 초기화
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
     </div>
   );

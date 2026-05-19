@@ -1078,3 +1078,115 @@ a.reservation-call {
   align-items: center;
   justify-content: center;
 }
+
+/* —— 테이블 그리드 (시스템 화면) —— */
+.tables-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.tc-count-badge {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.table-card {
+  border-radius: 12px;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.table-card--empty {
+  opacity: 0.35;
+  min-height: 64px;
+  justify-content: center;
+}
+
+.table-card--active {
+  border-color: var(--accent);
+  background: rgba(61, 156, 245, 0.07);
+}
+
+.table-card--over {
+  border-color: var(--danger);
+  background: var(--warn-bg);
+  animation: pulse-warn 1.5s ease-in-out infinite;
+}
+
+.tc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.tc-num {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.tc-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.tc-status--active {
+  background: rgba(61, 156, 245, 0.18);
+  color: var(--accent);
+}
+
+.tc-status--over {
+  background: var(--warn-bg);
+  color: var(--danger);
+}
+
+.tc-status--empty {
+  color: var(--muted);
+}
+
+.tc-timer {
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin: 0.15rem 0;
+}
+
+.tc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.tc-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.tc-btn {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.35rem;
+}
