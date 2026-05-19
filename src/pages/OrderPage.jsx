@@ -67,7 +67,10 @@ export default function OrderPage() {
       if (!map.has(m.category)) map.set(m.category, []);
       map.get(m.category).push(m);
     }
-    return [...map.entries()];
+    return [...map.entries()].map(([cat, items]) => [
+      cat,
+      cat === "세트" ? [...items].sort((a, b) => b.price - a.price) : items,
+    ]);
   }, [menu]);
 
   const tableKey = table.trim();

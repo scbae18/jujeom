@@ -310,7 +310,6 @@ select:focus {
 
 .menu-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
@@ -339,10 +338,11 @@ select:focus {
 }
 
 .menu-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .menu-name {
@@ -367,6 +367,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .qty-controls button {
