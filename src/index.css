@@ -1079,6 +1079,95 @@ a.reservation-call {
   justify-content: center;
 }
 
+/* —— 주방 그리드 —— */
+.kitchen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.kitchen-card {
+  background: var(--surface);
+  border: 2px solid var(--accent-dim);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.kc-table {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.kc-time {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.kc-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.kc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+}
+
+.kc-item--done {
+  opacity: 0.4;
+}
+
+.kc-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.kc-done-badge {
+  font-size: 0.75rem;
+  color: var(--success);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.kc-btn-done {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  border: none;
+  background: var(--success);
+  color: #0a1f0f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kc-btn-done:hover {
+  filter: brightness(1.08);
+}
+
 /* —— 테이블 그리드 (시스템 화면) —— */
 .tables-section-title {
   display: flex;
