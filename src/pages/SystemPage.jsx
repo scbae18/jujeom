@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
 const ALL_TABLES = Array.from({ length: 40 }, (_, i) => String(i + 1));
@@ -16,6 +16,12 @@ function formatHMS(ms) {
 export default function SystemPage() {
   const { socket, connected, state } = useAppSocket();
   const [clock, setClock] = useState(0);
+  const [confirmTable, setConfirmTable] = useState(null);
+
+  const handleReset = useCallback((table) => {
+    socket.emit("system:resetTable", table);
+    setConfirmTable(null);
+  }, [socket]);
 
   useEffect(() => {
     const id = setInterval(() => setClock((c) => c + 1), 1000);
@@ -44,6 +50,18 @@ export default function SystemPage() {
 
   return (
     <div className="page system-page">
+      {confirmTable && (
+        <div className="modal-backdrop" role="presentation" onClick={() => setConfirmTable(null)}>
+          <div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">{confirmTable}번 테이블 해제</h2>
+            <p className="modal-body">타이머와 주방 주문이 모두 초기화됩니다. 계속할까요?</p>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={() => setConfirmTable(null)}>취소</button>
+              <button type="button" className="btn-danger" onClick={() => handleReset(confirmTable)}>해제</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="system-top">
         <h1 className="system-h1">시스템 / 타이머</h1>
         <span className={`conn large ${connected ? "ok" : ""}`}>{connected ? "연결됨" : "연결 끊김"}</span>
@@ -68,7 +86,7 @@ export default function SystemPage() {
                     type="button"
                     className="tc-close"
                     aria-label="테이블 할당 해제"
-                    onClick={() => socket.emit("system:resetTable", table)}
+                    onClick={() => setConfirmTable(table)}
                   >✕</button>
                 )}
               </div>

@@ -17,9 +17,9 @@ export const MENU_LIST = [
   { id: 5, name: "닭강정", price: 15000, category: "메인", addonOnly: true },
   { id: 6, name: "제육", price: 15000, category: "메인", addonOnly: true },
   { id: 7, name: "소세지 나초", price: 15000, category: "메인", addonOnly: true },
-  { id: 8, name: "콘치즈", price: 11000, category: "메인", addonOnly: true },
-  { id: 9, name: "오지치즈 후라이", price: 11000, category: "메인", addonOnly: true },
   /* 사이드 — 추가 주문용 */
+  { id: 8, name: "콘치즈", price: 11000, category: "사이드", addonOnly: true },
+  { id: 9, name: "오지치즈 후라이", price: 11000, category: "사이드", addonOnly: true },
   { id: 10, name: "주먹밥", price: 8000, category: "사이드", addonOnly: true },
   /* 기타 */
   { id: COVER_MENU_ID, name: "자릿세", price: 5000, category: "기타", addonOnly: true, hideFirstOrderBadge: true },

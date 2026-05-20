@@ -34,7 +34,19 @@ export default function KitchenPage() {
                   <li key={it.lineKey ?? `${o.id}-${i}`} className={`kc-item ${it.done ? "kc-item--done" : ""}`}>
                     <span className="kc-item-name">{it.name}</span>
                     {it.done ? (
-                      <span className="kc-done-badge">완료</span>
+                      <button
+                        type="button"
+                        className="kc-btn-undo"
+                        onClick={() =>
+                          socket.emit("kitchen:uncompleteLine", {
+                            orderId: o.id,
+                            lineKey: it.lineKey,
+                            lineIndex: i,
+                          })
+                        }
+                      >
+                        취소
+                      </button>
                     ) : (
                       <button
                         type="button"

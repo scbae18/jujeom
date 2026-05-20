@@ -1191,6 +1191,23 @@ a.reservation-call {
   filter: brightness(1.08);
 }
 
+.kc-btn-undo {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--muted);
+  background: transparent;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kc-btn-undo:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* —— 테이블 그리드 (시스템 화면) —— */
 .tables-section-title {
   display: flex;
@@ -1426,4 +1443,75 @@ a.reservation-call {
   .system-settings {
     padding: 0.85rem;
   }
+}
+
+/* —— 매뉴얼 페이지 —— */
+.manual-page {
+  max-width: 680px;
+}
+
+.manual-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.manual-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.manual-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.manual-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.manual-list--sub {
+  margin-top: 0.35rem;
+  color: var(--muted);
+}
+
+.manual-table-wrap {
+  overflow-x: auto;
+}
+
+.manual-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.manual-table th,
+.manual-table td {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.manual-table th {
+  background: var(--surface);
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.manual-table tr:nth-child(even) td {
+  background: var(--surface);
 }

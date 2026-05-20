@@ -8,6 +8,7 @@ import StatsPage from "./pages/StatsPage.jsx";
 import ReservePage from "./pages/ReservePage.jsx";
 import ReservationsPage from "./pages/ReservationsPage.jsx";
 import ResetAllPage from "./pages/ResetAllPage.jsx";
+import ManualPage from "./pages/ManualPage.jsx";
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -43,11 +44,11 @@ function AppShell() {
           <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/settings">
             설정
           </NavLink>
-          <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/stats">
-            매출
-          </NavLink>
           <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/reservations">
             예약
+          </NavLink>
+          <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/manual">
+            매뉴얼
           </NavLink>
           <NavLink className={({ isActive }) => (isActive ? "nav-a active nav-a--reset" : "nav-a nav-a--reset")} to="/reset">
             전체 초기화
@@ -63,6 +64,7 @@ function AppShell() {
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/reservations" element={<ReservationsPage />} />
           <Route path="/reset" element={<ResetAllPage />} />
+          <Route path="/manual" element={<ManualPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

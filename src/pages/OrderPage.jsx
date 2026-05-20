@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
 /**
@@ -11,6 +11,8 @@ export default function OrderPage() {
   /** menuId -> 수량 */
   const [quantities, setQuantities] = useState({});
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitIdRef = useRef(null);
 
   const soldSet = useMemo(() => new Set(state?.soldOutIds ?? []), [state?.soldOutIds]);
 
@@ -39,16 +41,29 @@ export default function OrderPage() {
 
   const total = useMemo(() => lines.reduce((s, l) => s + l.price * l.qty, 0), [lines]);
 
+  const openPaymentModal = useCallback(() => {
+    submitIdRef.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setPaymentModalOpen(true);
+  }, []);
+
   const submit = useCallback(() => {
-    socket.emit("order:submit", { table, quantities, partySize }, (res) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    socket.emit("order:submit", { table, quantities, partySize, submitId: submitIdRef.current }, (res) => {
+      setIsSubmitting(false);
       if (res?.ok) {
         setQuantities({});
         setTable("");
         setPartySize("");
         setPaymentModalOpen(false);
+        submitIdRef.current = null;
       }
     });
-  }, [socket, table, quantities]);
+  }, [socket, table, quantities, partySize, isSubmitting]);
+
+  useEffect(() => {
+    if (!connected) setIsSubmitting(false);
+  }, [connected]);
 
   useEffect(() => {
     if (!paymentModalOpen) return;
@@ -59,7 +74,7 @@ export default function OrderPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [paymentModalOpen]);
 
-  const canSubmit = connected && lines.length > 0 && table.trim().length > 0;
+  const canSubmit = connected && lines.length > 0 && table.trim().length > 0 && Number(partySize) >= 1;
 
   const byCategory = useMemo(() => {
     const map = new Map();
@@ -69,12 +84,10 @@ export default function OrderPage() {
     }
     return [...map.entries()].map(([cat, items]) => [
       cat,
-      cat === "세트" ? [...items].sort((a, b) => b.price - a.price) : items,
+      cat === "세트" || cat === "사이드" ? [...items].sort((a, b) => b.price - a.price) : items,
     ]);
   }, [menu]);
 
-  const tableKey = table.trim();
-  const tableHasOrdered = Boolean(tableKey && state?.tables?.[tableKey]);
 
   return (
     <div className="page order-page">
@@ -95,13 +108,17 @@ export default function OrderPage() {
             <h2 id="pay-modal-title" className="modal-title">
               입금 확인
             </h2>
-            <p className="modal-body">입금 확인했나요?</p>
+            {!connected ? (
+              <p className="modal-body" style={{ color: "var(--danger)" }}>연결이 끊겼습니다. 재연결 후 시도하세요.</p>
+            ) : (
+              <p className="modal-body">입금 확인했나요?</p>
+            )}
             <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={() => setPaymentModalOpen(false)}>
+              <button type="button" className="btn-secondary" onClick={() => setPaymentModalOpen(false)} disabled={isSubmitting}>
                 취소
               </button>
-              <button type="button" className="btn-primary" onClick={submit}>
-                주문 완료
+              <button type="button" className="btn-primary" onClick={submit} disabled={!connected || isSubmitting}>
+                {isSubmitting ? "처리 중…" : "주문 완료"}
               </button>
             </div>
           </div>
@@ -148,15 +165,13 @@ export default function OrderPage() {
             <ul className="menu-list">
               {items.map((m) => {
                 const sold = soldSet.has(m.id);
-                const addonHint = m.addonOnly === true && !tableHasOrdered && !m.hideFirstOrderBadge;
                 const q = Math.max(0, Math.floor(Number(quantities[m.id]) || 0));
                 return (
-                  <li key={m.id} className={`menu-row ${sold ? "soldout" : ""} ${addonHint ? "addon-hint" : ""}`}>
+                  <li key={m.id} className={`menu-row ${sold ? "soldout" : ""}`}>
                     <div className="menu-info">
                       <span className="menu-name">{m.name}</span>
                       <span className="menu-price">{m.price.toLocaleString()}원</span>
                       {sold && <span className="badge-sold">주문 불가</span>}
-                      {addonHint && !sold && <span className="badge-addon">첫 주문 후</span>}
                     </div>
                     <div className="qty-controls">
                       <button type="button" disabled={sold} onClick={() => setQty(m.id, -1)} aria-label="감소">
@@ -196,7 +211,7 @@ export default function OrderPage() {
         <button
           type="button"
           className="btn-primary btn-block"
-          onClick={() => setPaymentModalOpen(true)}
+          onClick={openPaymentModal}
           disabled={!canSubmit}
         >
           주문 완료

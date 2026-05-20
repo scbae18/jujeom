@@ -63,6 +63,15 @@ function randomId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** 중복 주문 방지: 최근 submitId 100건 캐시 */
+const recentSubmitIds = [];
+function isDuplicateSubmit(id) {
+  if (!id || recentSubmitIds.includes(id)) return true;
+  recentSubmitIds.push(id);
+  if (recentSubmitIds.length > 100) recentSubmitIds.shift();
+  return false;
+}
+
 /** 클라이언트로 보낼 직렬화 가능한 스냅샷 */
 function getSnapshot() {
   return {
@@ -216,6 +225,13 @@ function submitOrder(tableRaw, items, partySize) {
 
   if (ts.timerStartedAt == null) {
     ts.timerStartedAt = Date.now();
+  } else {
+    const defaultLimit = Math.max(1, Math.floor(Number(state.settings.defaultLimitMinutes) || 90));
+    const limitMs = (defaultLimit + Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0))) * 60 * 1000;
+    if (Date.now() - ts.timerStartedAt >= limitMs) {
+      ts.timerStartedAt = Date.now();
+      ts.bonusLimitMinutes = 0;
+    }
   }
 
   return { ok: true };
@@ -225,7 +241,11 @@ io.on("connection", (socket) => {
   socket.emit("state", getSnapshot());
 
   socket.on("order:submit", (payload, ack) => {
-    const { table, quantities, partySize } = payload || {};
+    const { table, quantities, partySize, submitId } = payload || {};
+    if (isDuplicateSubmit(submitId)) {
+      if (typeof ack === "function") ack({ ok: false, error: "중복 주문입니다." });
+      return;
+    }
     const q = quantities && typeof quantities === "object" ? quantities : {};
     const ps = Math.max(0, Math.floor(Number(partySize) || 0));
     const items = [];
@@ -272,6 +292,24 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
+  socket.on("kitchen:uncompleteLine", (payload) => {
+    const orderId = payload?.orderId;
+    const lineKey = typeof payload?.lineKey === "string" ? payload.lineKey : "";
+    const order = state.kitchenQueue.find((o) => o.id === orderId);
+    if (!order?.items?.length) return;
+
+    let idx = -1;
+    if (lineKey) idx = order.items.findIndex((it) => it.lineKey === lineKey);
+    if (idx < 0 && payload?.lineIndex !== undefined) {
+      const n = parseInt(String(payload.lineIndex), 10);
+      if (Number.isInteger(n) && n >= 0 && n < order.items.length) idx = n;
+    }
+    if (idx < 0) return;
+
+    order.items[idx].done = false;
+    broadcastState();
+  });
+
   socket.on("kitchen:soldOut:toggle", (menuId) => {
     const id = Number(menuId);
     if (!MENU_LIST.some((m) => m.id === id)) return;
@@ -280,13 +318,22 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  /** 시간 연장: 경과 시간은 유지, 허용 제한 시간만 extensionMinutes만큼 가산 */
+  /** 시간 연장: 시간 초과 상태면 timerStartedAt을 조정해 남은 시간 = extensionMinutes로 리셋 */
   socket.on("system:extend", (tableRaw) => {
     const table = String(tableRaw).trim();
     if (!table || !state.tables[table]) return;
     const ts = state.tables[table];
     const add = Math.max(1, Math.floor(Number(state.settings.extensionMinutes) || 60));
     ts.bonusLimitMinutes = Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0)) + add;
+
+    const defaultLimit = Math.max(1, Math.floor(Number(state.settings.defaultLimitMinutes) || 90));
+    const newLimitMs = (defaultLimit + ts.bonusLimitMinutes) * 60 * 1000;
+    const addMs = add * 60 * 1000;
+    const elapsed = Date.now() - (ts.timerStartedAt ?? Date.now());
+    if (elapsed >= newLimitMs - addMs) {
+      ts.timerStartedAt = Date.now() - (newLimitMs - addMs);
+    }
+
     broadcastState();
   });
 
