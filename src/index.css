@@ -1515,3 +1515,33 @@ a.reservation-call {
 .manual-table tr:nth-child(even) td {
   background: var(--surface);
 }
+
+.manual-list--ol {
+  list-style: decimal;
+}
+
+.manual-warn {
+  margin-top: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.manual-warn--danger {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.manual-warn-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ca8a04;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.manual-warn--danger .manual-warn-title {
+  color: var(--danger);
+}
