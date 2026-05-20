@@ -1065,19 +1065,26 @@ select:focus {
   border-radius: 12px;
   padding: 1rem 1.1rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .reservation-main {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .reservation-name {
   font-weight: 700;
   font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .reservation-meta {
@@ -1090,8 +1097,15 @@ select:focus {
 
 .reservation-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.reservation-actions .btn-secondary,
+.reservation-actions .btn-danger {
+  width: 80px;
+  text-align: center;
 }
 
 a.reservation-call {
@@ -1100,6 +1114,24 @@ a.reservation-call {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .reservation-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reservation-actions {
+    flex-direction: row;
+  }
+
+  .reservation-actions .btn-secondary,
+  .reservation-actions .btn-danger {
+    flex: 1;
+    width: auto;
+    padding: 0.75rem;
+  }
 }
 
 /* —— 주방 그리드 —— */
@@ -1544,4 +1576,48 @@ a.reservation-call {
 
 .manual-warn--danger .manual-warn-title {
   color: var(--danger);
+}
+
+/* —— 예약 수기 등록 폼 —— */
+.reservation-form {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.reservation-form-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.reservation-form-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.reservation-form-fields input {
+  min-width: 0;
+  width: 100%;
+}
+
+.reservation-form-error {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+@media (max-width: 640px) {
+  .reservation-form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-form-fields .btn-primary {
+    width: 100%;
+  }
 }
