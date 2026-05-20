@@ -6,20 +6,13 @@ export default function SettingsPage() {
   const menu = state?.menu ?? [];
   const soldSet = useMemo(() => new Set(state?.soldOutIds ?? []), [state?.soldOutIds]);
 
-  const defaultLimit = state?.settings?.defaultLimitMinutes ?? 90;
-  const extensionM = state?.settings?.extensionMinutes ?? 60;
+  const defaultLimit = state?.settings?.defaultLimitMinutes ?? 120;
   const [defaultInput, setDefaultInput] = useState(String(defaultLimit));
-  const [extensionInput, setExtensionInput] = useState(String(extensionM));
 
   useEffect(() => {
     if (state?.settings?.defaultLimitMinutes != null)
       setDefaultInput(String(state.settings.defaultLimitMinutes));
   }, [state?.settings?.defaultLimitMinutes]);
-
-  useEffect(() => {
-    if (state?.settings?.extensionMinutes != null)
-      setExtensionInput(String(state.settings.extensionMinutes));
-  }, [state?.settings?.extensionMinutes]);
 
   return (
     <div className="page settings-page">
@@ -47,27 +40,6 @@ export default function SettingsPage() {
                 type="button"
                 className="btn-secondary"
                 onClick={() => socket.emit("system:setDefaultLimitMinutes", defaultInput)}
-              >
-                적용
-              </button>
-            </div>
-          </label>
-          <label className="field-label">
-            연장 시간 (분)
-            <p className="muted small flush">「+연장」 한 번당 제한 시간에 더해집니다. 타이머는 유지됩니다.</p>
-            <div className="inline-row">
-              <input
-                type="number"
-                min={1}
-                max={999}
-                value={extensionInput}
-                onChange={(e) => setExtensionInput(e.target.value)}
-                className="field-input narrow"
-              />
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => socket.emit("system:setExtensionMinutes", extensionInput)}
               >
                 적용
               </button>

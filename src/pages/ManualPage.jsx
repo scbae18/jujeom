@@ -43,7 +43,7 @@ export default function ManualPage() {
               <tr>
                 <td>4명</td>
                 <td>32,000원 이상</td>
-                <td>세트 1개 + 사이드 1개</td>
+                <td>메인 2개</td>
               </tr>
             </tbody>
           </table>
@@ -56,6 +56,7 @@ export default function ManualPage() {
         <ol className="manual-list manual-list--ol">
           <li>테이블 번호 입력 (1~40)</li>
           <li>인원수 입력 — 테이블 현황에 반영되므로 반드시 입력</li>
+          <li>입금자 이름 입력 — 테이블 카드에 표시됨</li>
           <li>메뉴 +/− 버튼으로 수량 선택</li>
           <li>하단 <strong>주문 완료</strong> → 입금 확인 후 <strong>주문 완료</strong> 클릭</li>
         </ol>
@@ -91,7 +92,6 @@ export default function ManualPage() {
         <ul className="manual-list">
           <li>1~40번 테이블 전체를 한눈에 확인</li>
           <li>파란 테두리 — 이용 중 / 빨간 테두리 — 시간 초과</li>
-          <li><strong>+연장</strong> — 설정된 연장 시간만큼 추가 (시간 초과 상태면 그 시점부터 재시작)</li>
           <li><strong>✕</strong> — 테이블 해제 (확인 모달 후 처리)</li>
         </ul>
         <div className="manual-warn">
@@ -106,15 +106,14 @@ export default function ManualPage() {
       <section className="manual-section">
         <h2 className="manual-heading">설정 탭 사용법</h2>
         <ul className="manual-list">
-          <li><strong>기본 제한 시간</strong> — 첫 주문 후 이 시간을 넘기면 시간 초과 표시 (기본 90분)</li>
-          <li><strong>연장 시간</strong> — +연장 한 번 클릭 시 추가되는 분 (기본 60분)</li>
+          <li><strong>기본 제한 시간</strong> — 첫 주문 후 이 시간을 넘기면 시간 초과 표시 (기본 120분)</li>
           <li><strong>품절 설정</strong> — 메뉴 버튼 클릭으로 판매중 ↔ 품절 즉시 전환</li>
         </ul>
         <div className="manual-warn">
           <p className="manual-warn-title">주의</p>
           <ul className="manual-list">
             <li>품절 처리된 메뉴는 주문서에서 선택 불가 — 영업 전 미리 설정</li>
-            <li>제한 시간 변경은 이후 연장 계산에만 적용, 기존 타이머에는 소급 미적용</li>
+            <li>제한 시간 변경은 이후 주문부터 적용, 기존 타이머에는 소급 미적용</li>
           </ul>
         </div>
       </section>

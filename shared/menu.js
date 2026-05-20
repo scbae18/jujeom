@@ -1,28 +1,21 @@
 /**
  * 메뉴 목록 — 운영 시 이 배열만 수정하면 됩니다.
- * addonOnly: true → 메인·사이드 등(주문서에서 「첫 주문 후」 배지용).
- * hideFirstOrderBadge: true → 해당 배지 없음(자릿세).
- * kitchenParts: 세트만. 주방에서는 이 이름들로 각각 조리 완료 줄이 생김.
+ * addonOnly: true → 예약용(미사용).
  * 자릿세(COVER_MENU_ID): 주방 조리 없음·시스템 인원(자릿세 수량 합) 집계.
  */
 export const COVER_MENU_ID = 11;
 
 export const MENU_LIST = [
-  /* 세트 — kitchenParts: 주방에서 조리 완료를 메뉴별로 나누어 표시 */
-  { id: 1, name: "제육 + 주먹밥 세트", price: 19900, category: "세트", kitchenParts: ["제육", "주먹밥"] },
-  { id: 2, name: "닭강정 + 주먹밥 세트", price: 19900, category: "세트", kitchenParts: ["닭강정", "주먹밥"] },
-  { id: 3, name: "제육 + 콘치즈 세트", price: 23900, category: "세트", kitchenParts: ["제육", "콘치즈"] },
-  { id: 4, name: "닭강정 + 콘치즈 세트", price: 23900, category: "세트", kitchenParts: ["닭강정", "콘치즈"] },
-  /* 메인 — 추가 주문용 */
-  { id: 5, name: "닭강정", price: 15000, category: "메인", addonOnly: true },
-  { id: 6, name: "제육", price: 15000, category: "메인", addonOnly: true },
-  { id: 7, name: "소세지 나초", price: 15000, category: "메인", addonOnly: true },
-  /* 사이드 — 추가 주문용 */
-  { id: 8, name: "콘치즈", price: 11000, category: "사이드", addonOnly: true },
-  { id: 9, name: "오지치즈 후라이", price: 11000, category: "사이드", addonOnly: true },
-  { id: 10, name: "주먹밥", price: 8000, category: "사이드", addonOnly: true },
+  /* 메인 */
+  { id: 5, name: "닭강정", price: 18000, category: "메인" },
+  { id: 6, name: "제육", price: 18000, category: "메인" },
+  { id: 7, name: "소세지 나초", price: 18000, category: "메인" },
+  /* 사이드 */
+  { id: 8, name: "콘치즈", price: 11000, category: "사이드" },
+  { id: 9, name: "오지치즈 후라이", price: 11000, category: "사이드" },
+  { id: 10, name: "주먹밥", price: 8000, category: "사이드" },
   /* 기타 */
-  { id: COVER_MENU_ID, name: "자릿세", price: 5000, category: "기타", addonOnly: true, hideFirstOrderBadge: true },
+  { id: COVER_MENU_ID, name: "자릿세", price: 5000, category: "기타" },
 ];
 
 /**

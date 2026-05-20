@@ -33,8 +33,8 @@ const io = new Server(server, {
 /** @typedef {{ menuId: number, name: string, price: number, qty: number, done?: boolean, lineKey?: string }} OrderLine */
 /** @typedef {{ id: string, table: string, items: OrderLine[], createdAt: number }} KitchenOrder */
 
-/** @type {{ timerStartedAt: number | null, bonusLimitMinutes: number, coverQty: number }} */
-const defaultTableState = () => ({ timerStartedAt: null, bonusLimitMinutes: 0, coverQty: 0, partySize: 0 });
+/** @type {{ timerStartedAt: number | null, bonusLimitMinutes: number, coverQty: number, partySize: number, depositor: string }} */
+const defaultTableState = () => ({ timerStartedAt: null, bonusLimitMinutes: 0, coverQty: 0, partySize: 0, depositor: "" });
 
 /** 서버 단일 상태 */
 const state = {
@@ -44,7 +44,7 @@ const state = {
   tables: /** @type {Record<string, { timerStartedAt: number | null, bonusLimitMinutes: number, coverQty: number }>} */ ({}),
   settings: {
     /** 경고까지 기본 허용 시간(분) */
-    defaultLimitMinutes: 90,
+    defaultLimitMinutes: 120,
     /** 「시간 연장」 한 번당 제한 시간에 더해지는 분(타이머는 그대로) */
     extensionMinutes: 60,
   },
@@ -95,6 +95,7 @@ function getSnapshot() {
             bonusLimitMinutes: bonus,
             coverQty: Math.max(0, Math.floor(Number(v.coverQty) || 0)),
             partySize: Math.max(0, Math.floor(Number(v.partySize) || 0)),
+            depositor: String(v.depositor ?? ""),
           },
         ];
       })
@@ -147,7 +148,6 @@ function loadState() {
     if (Array.isArray(raw.kitchenQueue)) state.kitchenQueue = raw.kitchenQueue;
     if (raw.tables && typeof raw.tables === "object") state.tables = raw.tables;
     if (raw.settings?.defaultLimitMinutes) state.settings.defaultLimitMinutes = raw.settings.defaultLimitMinutes;
-    if (raw.settings?.extensionMinutes) state.settings.extensionMinutes = raw.settings.extensionMinutes;
     if (raw.salesStats) state.salesStats = { ...state.salesStats, ...raw.salesStats };
     if (Array.isArray(raw.reservations)) state.reservations = raw.reservations;
     console.log("[state] 저장된 상태를 복구했습니다.");
@@ -181,7 +181,7 @@ function recordSalesFromItems(items) {
 /**
  * 주문 접수: 주방 큐 추가. 타이머는 해당 테이블에 처음 주문이 들어올 때만 시작(추가 주문은 타이머 건드리지 않음).
  */
-function submitOrder(tableRaw, items, partySize) {
+function submitOrder(tableRaw, items, partySize, depositor) {
   const table = String(tableRaw).trim();
   if (!table) return { ok: false, error: "테이블 번호를 입력하세요." };
   if (!items.length) return { ok: false, error: "주문할 메뉴를 선택하세요." };
@@ -210,6 +210,7 @@ function submitOrder(tableRaw, items, partySize) {
   if (partySize > 0) {
     ts.partySize = partySize;
   }
+  if (depositor) ts.depositor = depositor;
 
   const kitchenItems = items.filter((it) => it.menuId !== COVER_MENU_ID);
   if (kitchenItems.length > 0) {
@@ -241,19 +242,20 @@ io.on("connection", (socket) => {
   socket.emit("state", getSnapshot());
 
   socket.on("order:submit", (payload, ack) => {
-    const { table, quantities, partySize, submitId } = payload || {};
+    const { table, quantities, partySize, submitId, depositor } = payload || {};
     if (isDuplicateSubmit(submitId)) {
       if (typeof ack === "function") ack({ ok: false, error: "중복 주문입니다." });
       return;
     }
     const q = quantities && typeof quantities === "object" ? quantities : {};
     const ps = Math.max(0, Math.floor(Number(partySize) || 0));
+    const dep = String(depositor ?? "").trim().slice(0, 40);
     const items = [];
     for (const m of MENU_LIST) {
       const qty = Math.max(0, Math.floor(Number(q[m.id]) || 0));
       if (qty > 0) items.push({ menuId: m.id, name: m.name, price: m.price, qty });
     }
-    const res = submitOrder(table, items, ps);
+    const res = submitOrder(table, items, ps, dep);
     if (res.ok) broadcastState();
     if (typeof ack === "function") ack(res);
     if (!res.ok && res.error) socket.emit("error:toast", res.error);
@@ -318,25 +320,6 @@ io.on("connection", (socket) => {
     broadcastState();
   });
 
-  /** 시간 연장: 시간 초과 상태면 timerStartedAt을 조정해 남은 시간 = extensionMinutes로 리셋 */
-  socket.on("system:extend", (tableRaw) => {
-    const table = String(tableRaw).trim();
-    if (!table || !state.tables[table]) return;
-    const ts = state.tables[table];
-    const add = Math.max(1, Math.floor(Number(state.settings.extensionMinutes) || 60));
-    ts.bonusLimitMinutes = Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0)) + add;
-
-    const defaultLimit = Math.max(1, Math.floor(Number(state.settings.defaultLimitMinutes) || 90));
-    const newLimitMs = (defaultLimit + ts.bonusLimitMinutes) * 60 * 1000;
-    const addMs = add * 60 * 1000;
-    const elapsed = Date.now() - (ts.timerStartedAt ?? Date.now());
-    if (elapsed >= newLimitMs - addMs) {
-      ts.timerStartedAt = Date.now() - (newLimitMs - addMs);
-    }
-
-    broadcastState();
-  });
-
   socket.on("system:resetTable", (tableRaw) => {
     const table = String(tableRaw).trim();
     if (!table) return;
@@ -361,11 +344,6 @@ io.on("connection", (socket) => {
 
   socket.on("system:setDefaultLimitMinutes", (minutes) => {
     state.settings.defaultLimitMinutes = Math.max(1, Math.floor(Number(minutes) || 90));
-    broadcastState();
-  });
-
-  socket.on("system:setExtensionMinutes", (minutes) => {
-    state.settings.extensionMinutes = Math.max(1, Math.floor(Number(minutes) || 60));
     broadcastState();
   });
 

@@ -8,6 +8,7 @@ export default function OrderPage() {
   const { socket, connected, state, toast } = useAppSocket();
   const [table, setTable] = useState("");
   const [partySize, setPartySize] = useState("");
+  const [depositor, setDepositor] = useState("");
   /** menuId -> 수량 */
   const [quantities, setQuantities] = useState({});
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -49,17 +50,18 @@ export default function OrderPage() {
   const submit = useCallback(() => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-    socket.emit("order:submit", { table, quantities, partySize, submitId: submitIdRef.current }, (res) => {
+    socket.emit("order:submit", { table, quantities, partySize, depositor, submitId: submitIdRef.current }, (res) => {
       setIsSubmitting(false);
       if (res?.ok) {
         setQuantities({});
         setTable("");
         setPartySize("");
+        setDepositor("");
         setPaymentModalOpen(false);
         submitIdRef.current = null;
       }
     });
-  }, [socket, table, quantities, partySize, isSubmitting]);
+  }, [socket, table, quantities, partySize, depositor, isSubmitting]);
 
   useEffect(() => {
     if (!connected) setIsSubmitting(false);
@@ -84,7 +86,7 @@ export default function OrderPage() {
     }
     return [...map.entries()].map(([cat, items]) => [
       cat,
-      cat === "세트" || cat === "사이드" ? [...items].sort((a, b) => b.price - a.price) : items,
+      cat === "사이드" ? [...items].sort((a, b) => b.price - a.price) : items,
     ]);
   }, [menu]);
 
@@ -150,6 +152,18 @@ export default function OrderPage() {
               placeholder="명"
               value={partySize}
               onChange={(e) => setPartySize(e.target.value.replace(/\D/g, ""))}
+              className="field-input"
+            />
+          </label>
+          <label className="field-label">
+            입금자
+            <input
+              type="text"
+              autoComplete="off"
+              placeholder="이름"
+              maxLength={40}
+              value={depositor}
+              onChange={(e) => setDepositor(e.target.value)}
               className="field-input"
             />
           </label>
