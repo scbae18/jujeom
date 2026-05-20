@@ -9,219 +9,317 @@
 
 | 대상 | URL |
 |---|---|
-| 손님 주문 | https://festival-swing.duckdns.org/reserve |
+| 손님 예약 | https://festival-swing.duckdns.org/reserve |
 | 운영자 전체 | https://festival-swing.duckdns.org |
+| 매출 (비공개) | https://festival-swing.duckdns.org/stats |
 
 ---
 
-## 탭별 사용 방법
+## 목차
 
-### 주문서 `/`
-
-운영자가 테이블 주문을 직접 입력하는 화면.
-
-1. **테이블 번호** 입력 (1~40)
-2. **인원수** 입력 → 테이블 현황 카드에 반영됨
-3. 메뉴 목록에서 **+/−** 버튼으로 수량 선택
-4. 하단 **주문 완료** 버튼 → 입금 확인 모달 → **주문 완료** 클릭
-
-> 세트 메뉴는 가격 내림차순으로 표시됩니다.  
-> `첫 주문 후` 배지가 붙은 메뉴는 해당 테이블에 첫 주문이 들어온 뒤부터 추가 선택 가능합니다.
+1. [기술 스택](#기술-스택)
+2. [인프라 구축 이력](#인프라-구축-이력)
+3. [기능 구현 이력](#기능-구현-이력)
+4. [트러블슈팅 기록](#트러블슈팅-기록)
+5. [운영 설정 변경 이력](#운영-설정-변경-이력)
+6. [성능 측정 결과](#성능-측정-결과)
+7. [서버 운영 가이드](#서버-운영-가이드)
+8. [주요 파일](#주요-파일)
 
 ---
 
-### 주방 `/kitchen`
+## 기술 스택
 
-주방 전용 화면. 접수된 주문이 카드 형태로 표시됩니다.
-
-- 상단: **대기 N건** 현황
-- 각 카드: 테이블 번호 + 접수 시각 + 메뉴별 **완료** 버튼
-- 메뉴별로 조리가 끝나면 **완료** 클릭 → 해당 항목 흐리게 처리
-- 카드 내 모든 항목이 완료되면 카드 자동 제거
-
----
-
-### 테이블 현황 `/system`
-
-1~40번 테이블 전체를 그리드로 한눈에 확인.
-
-| 카드 상태 | 표시 |
+| 영역 | 기술 |
 |---|---|
-| 빈 테이블 | 흐린 카드, 번호만 표시 |
-| 이용 중 | 파란 테두리, 카운트다운 타이머 |
-| 시간 초과 | 빨간 테두리·빨간 타이머, 펄스 애니메이션 |
-
-**카드 구성 (이용 중 테이블)**
-
-```
-[N번]  [이용 중]  [✕]
- 01:23:45          ← 남은 시간 (기본 90분 차감)
- 인원 3명 / 제한 90분
- [+연장]
-```
-
-- **✕ 버튼**: 테이블 할당 해제 (주문 내역·타이머 초기화)
-- **+연장**: 설정에서 지정한 연장 시간만큼 제한 시간 추가 (타이머는 유지)
-- 타이머가 0이 되면 빨간 글씨로 유지, 수동으로 해제하기 전까지 표시
+| 프론트엔드 | React 18, Vite, React Router v6 |
+| 백엔드 | Node.js, Express, Socket.io |
+| 상태 영속성 | 인메모리 + JSON 파일 (`/home/ubuntu/data/state.json`) |
+| 프로세스 관리 | PM2 (fork mode, startup 등록) |
+| 리버스 프록시 | Nginx (WebSocket 지원, 86400s timeout) |
+| SSL | ZeroSSL (acme.sh DNS-01 방식, 자동 갱신) |
+| 인프라 | AWS EC2 t3.micro (ap-northeast-2c), Ubuntu 24.04 |
+| 도메인 | DuckDNS — festival-swing.duckdns.org |
+| Elastic IP | 13.125.114.50 |
 
 ---
 
-### 설정 `/settings`
+## 인프라 구축 이력
 
-**타이머 설정**
+### 1단계 — AWS EC2 + Nginx + PM2
 
-| 항목 | 설명 |
-|---|---|
-| 기본 제한 시간 (분) | 첫 주문 후 이 시간을 넘기면 시간 초과 표시 (기본 90분) |
-| 연장 시간 (분) | 「+연장」 한 번 클릭 시 제한 시간에 더해지는 분 (기본 60분) |
+- t3.micro 인스턴스 생성 (ap-northeast-2c 서울 리전)
+- Ubuntu 24.04 + Node.js 22 설치
+- PM2로 서버 프로세스 관리 및 부팅 자동 시작 등록
+- Nginx 리버스 프록시 설정 (HTTP 3002 → HTTPS 443 포워딩)
+- WebSocket 업그레이드 헤더 (`Upgrade`, `Connection`) 추가
+- Nginx `proxy_read_timeout 86400s` — Socket.io 장기 연결 유지
 
-**품절 설정**
+### 2단계 — SSL 인증서 (ZeroSSL + acme.sh)
 
-- 메뉴 버튼을 클릭하면 즉시 **품절 ↔ 판매중** 전환
-- 품절 처리된 메뉴는 주문서에서 선택 불가로 표시됨
+- acme.sh DNS-01 방식으로 ZeroSSL 인증서 발급
+- DuckDNS TXT 레코드 자동 생성으로 도메인 소유권 인증
+- 인증서 경로: `/home/ubuntu/.acme.sh/festival-swing.duckdns.org_ecc/`
+- 갱신 명령: `acme.sh --renew -d festival-swing.duckdns.org --force && sudo systemctl reload nginx`
 
----
+### 3단계 — 보안 그룹 설정
 
-### 매출 `/stats`
+- 초기: SSH 포트 22를 특정 IP로 제한 → IP 변경 시마다 편집 필요
+- **조치**: SSH 소스를 `0.0.0.0/0`으로 변경 (`.pem` 키 인증이 실질적 보안 담당)
+- HTTP(80), HTTPS(443), 소켓 포트(3002) 인바운드 허용
 
-주문 완료로 접수된 데이터 기준 실시간 집계.
+### 4단계 — Swap 추가
 
-- 총 매출 / 총 주문 수량 / 주문 완료 건수
-- 카테고리별 메뉴 수량·금액 상세
-
-> 서버 재시작 시 초기화됩니다. 영업 종료 전 스크린샷 보관을 권장합니다.
-
----
-
-### 예약 `/reservations`
-
-손님이 `/reserve` 에서 제출한 예약 목록 확인.
-
-- 이름 / 인원 / 전화번호 / 접수 시각 표시
-- 처리 완료된 예약은 **삭제** 버튼으로 제거
-
----
-
-### 전체 초기화 `/reset`
-
-주방 큐·테이블 타이머·매출·예약을 전부 초기화.  
-영업 종료 후 다음 행사 준비 시 사용. **되돌릴 수 없습니다.**
-
----
-
-### 손님 주문 `/reserve`
-
-손님 전용 화면 (헤더·탭 없음). QR 코드로 제공.
-
-1. 이름, 인원, 전화번호 입력
-2. **예약하기** 클릭
-3. 운영자의 `/reservations` 탭에 실시간 반영
-
----
-
-## 행사 당일 운영 흐름
-
-```
-[영업 시작 전]
-  설정 탭 → 타이머 제한 시간 확인
-  설정 탭 → 품절 메뉴 있으면 미리 처리
-  QR 코드 각 테이블에 부착 (→ /reserve)
-
-[영업 중]
-  손님   : QR 스캔 → /reserve 예약 접수
-  운영자 : /reservations 확인 → 테이블 안내
-  운영자 : 주문서에서 테이블 번호·인원수·메뉴 입력 → 주문 완료
-  주방   : /kitchen 에서 주문 카드 확인 → 메뉴별 완료 처리
-  운영자 : /system 에서 타이머 모니터링 → 시간 초과 테이블 처리
-
-[영업 종료]
-  /stats 에서 매출 최종 확인 (스크린샷 보관)
-  /reset 에서 전체 초기화
-```
-
----
-
-## 서버 시작 (행사 당일)
-
-### 1. EC2 접속
+- t3.micro 기본 Swap: 0 (없음)
+- 부하 테스트 결과 50 클라이언트 피크 시 여유 RAM 102MB — OOM Kill 위험 확인
+- **조치**: Swap 512MB 추가 및 `/etc/fstab` 등록으로 재부팅 후에도 유지
 
 ```bash
+sudo fallocate -l 512M /swapfile
+sudo chmod 600 /swapfile && sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+---
+
+## 기능 구현 이력
+
+### v0 — 기초 시스템
+
+- Express + Socket.io 기반 실시간 서버 구축
+- 인메모리 상태 관리 + `state.json` 파일 영속성 (PM2 재시작 후 복원)
+- 주문서 / 주방 / 테이블 현황 / 설정 탭 기본 구현
+- 1~40번 테이블 그리드 뷰 (파란 테두리: 이용 중, 빨간 테두리: 시간 초과)
+- 타이머 카운트다운 (기본 90분 → 후에 120분으로 변경)
+- 메뉴 품절 토글 (설정 탭 → 주문서 즉시 반영)
+- PM2 startup 등록으로 EC2 재부팅 시 자동 복구
+
+### v1 — 모바일 최적화 및 연결 안정성
+
+- Socket.io `pingTimeout: 60000 / pingInterval: 25000` 조정
+- `reconnectionDelayMax: 10000` — LTE 환경 재연결 최적화
+- 반응형 CSS — 모바일 / 태블릿 / 데스크톱 레이아웃
+
+### v2 — 주문 안전성 개선
+
+**문제**: 입금 확인 모달에서 주문 완료 클릭 시 즉시 연결이 끊기는 현상  
+**원인**: `state.menu.map(...)` → `state.menu`가 `undefined`라 TypeError 발생 → PM2 재시작 → 전체 클라이언트 강제 종료  
+**수정**: `MENU_LIST.map(...)` (import된 상수 사용)
+
+**중복 주문 방지 (submitId)**
+- 주문 완료 클릭 시 `submitId` 생성 (모달 열릴 때 1회 생성, `useRef`로 고정)
+- 서버에서 최근 100건 submitId 캐시 → 재연결 후 재시도해도 중복 차단
+- Socket ack가 도착하지 않으면 `isSubmitting` stuck 상태 방지: 연결 끊김 시 `useEffect`로 즉시 리셋
+
+```js
+useEffect(() => {
+  if (!connected) setIsSubmitting(false);
+}, [connected]);
+```
+
+### v3 — 매뉴얼 탭 + 메뉴 개편
+
+- 매뉴얼 탭(`/manual`) 추가: 자릿세 규정, 최소 주문 기준, 탭별 사용법·주의사항
+- 세트 메뉴 4종 삭제 → 메뉴 단순화
+- 콘치즈·오지치즈 후라이 카테고리 변경: 메인 → 사이드
+- 닭강정·제육·소세지 나초 가격: 15,000원 → 18,000원
+- 매출 탭 nav에서 제거 (URL 직접 접속 `/stats` 으로만 접근)
+- 시간 초과 테이블 재주문 시 타이머 자동 재시작 (기존: 추적 불가)
+
+### v4 — 예약 시스템
+
+- 손님 예약 전용 화면 `/reserve` (헤더·탭 없음, QR 코드 배포용)
+- 운영자 예약 관리 탭 `/reservations`
+  - 실시간 예약 목록 (접수순 정렬)
+  - 수기 등록: 이름·전화번호·인원 입력 후 즉시 추가
+  - 전화하기 버튼 (`tel:` 링크)
+  - 삭제 확인 모달 (이름·전화번호 표시 후 2단계 삭제)
+- 반응형 레이아웃: 데스크톱(4열 폼, 카드 가로) / 모바일(1열 폼, 카드 세로)
+- 모바일 가로 오버플로우 수정: CSS Grid `min-width: 0; width: 100%`
+
+### v5 — 테이블 현황 고도화
+
+**입금자 추적**
+- 주문서에 입금자 입력 필드 추가
+- 테이블 상태에 `depositor`, `depositors` 저장
+- 복수 입금자: 이름이 다를 경우 `,`로 연결하여 테이블 카드에 표시 (중복 제외)
+
+**누적 금액**
+- 테이블별 `totalAmount` 누적 (주문마다 합산)
+- 테이블 카드에 누적 금액 표시 → 송금 금액 크로스체크 용도
+
+**주문 내역 모달**
+- 테이블 카드 우상단 **내역** 버튼
+- 모달: 주문 회차별 품목·소계, 하단 누적 합계
+- 테이블 해제(✕) 시 orderHistory 함께 초기화
+
+**UI 개선**
+- 테이블 카드 헤더 2행 구조 개편: `[N번 · 내역 · ✕]` 한 줄 → `[N번 내역 ✕] / [이용 중]` 2행으로 분리 (요소 겹침 해결)
+- 그리드 8열 고정 (`repeat(8, 1fr)`)
+- 컨테이너 최대폭 1100px → 1600px (노트북 화면 최대 활용)
+
+**연장 기능 제거**
+- 테이블 연장(+연장) 버튼 및 `system:extend` 서버 핸들러 삭제
+- 설정 탭 연장 시간 설정 UI 제거
+
+---
+
+## 트러블슈팅 기록
+
+| # | 현상 | 원인 | 해결 |
+|---|---|---|---|
+| 1 | 주문 완료 시 전체 클라이언트 연결 끊김 | `state.menu.map()` → TypeError (state.menu가 undefined) → PM2 재시작 | `MENU_LIST.map()`으로 교체 |
+| 2 | "처리 중…" + "연결이 끊겼습니다" 동시 표시 | 소켓 ack가 도착 못해 `isSubmitting=true` 고착 | 연결 끊김 감지 시 `isSubmitting` 강제 리셋 |
+| 3 | 시간 초과 테이블 재주문 시 타이머 추적 불가 | 초과 상태에서 새 주문이 와도 `timerStartedAt` 갱신 안 됨 | 초과 상태 확인 후 `timerStartedAt = Date.now()`, `bonusLimitMinutes = 0` 리셋 |
+| 4 | 모바일 예약 폼 가로 화면 오버플로우 | CSS Grid 아이템 기본 `min-width: auto` → 컨테이너 초과 | `min-width: 0; width: 100%` 적용 |
+| 5 | 테이블 카드 헤더 요소 겹침 | 번호·상태·내역·✕ 4개가 한 줄에 들어가 번호 줄바꿈 | 헤더를 2행으로 분리 (1행: 번호+버튼, 2행: 상태) |
+| 6 | SSH 접속 불가 (매번 IP 변경) | 보안 그룹 port 22 소스가 고정 IP로 설정됨 | 소스를 `0.0.0.0/0`으로 변경 (pem 키 인증으로 보안 유지) |
+| 7 | state.json에 90분이 저장되어 코드 변경(120분)이 무시됨 | 서버 로드 시 파일 값이 기본값을 덮어씀 | EC2에서 state.json 직접 수정 후 PM2 재시작 |
+| 8 | 자릿세 메뉴 위치 | MENU_LIST 배열 맨 마지막에 위치 → 주문서 맨 아래 표시 | MENU_LIST 배열 순서 변경으로 맨 위로 이동 |
+
+---
+
+## 운영 설정 변경 이력
+
+| 항목 | 초기값 | 변경값 | 사유 |
+|---|---|---|---|
+| 기본 타이머 | 90분 | **120분** | 2시간 운영 기준 |
+| 닭강정 가격 | 15,000원 | **18,000원** | 원가 반영 |
+| 제육 가격 | 15,000원 | **18,000원** | 원가 반영 |
+| 소세지 나초 가격 | 15,000원 | **18,000원** | 원가 반영 |
+| 세트 메뉴 | 4종 운영 | **삭제** | 운영 단순화 |
+| 콘치즈 카테고리 | 메인 | **사이드** | 메뉴 분류 재정비 |
+| 오지치즈 후라이 카테고리 | 메인 | **사이드** | 메뉴 분류 재정비 |
+| 테이블 연장 기능 | 있음 | **제거** | 운영 정책 변경 |
+| 그리드 열 수 | auto (5~6열) | **8열 고정** | 노트북 화면 최적화 |
+
+---
+
+## 성능 측정 결과
+
+> 40개 테이블 시뮬레이션 데이터 로드 상태에서 측정 (2025-05-21)
+
+### 베이스라인 (유휴 상태)
+
+| 항목 | 값 |
+|---|---|
+| CPU | 0% (100% idle) |
+| RAM 사용 | 400MB / 911MB |
+| Node.js RSS | 72MB |
+| TCP ESTABLISHED | 5개 |
+
+### 부하 테스트 결과
+
+| 항목 | 30 클라이언트 | 50 클라이언트 |
+|---|---|---|
+| 연결 성공률 | **100%** (30/30) | **100%** (50/50) |
+| 연결 오류 | 0 | 0 |
+| 주문 ack 성공률 | 100% | 100% |
+| 평균 응답 지연 | **16ms** | **54ms** |
+| p95 응답 지연 | ~20ms | **129ms** |
+| 최대 응답 지연 | 23ms | 165ms |
+| 피크 RAM 사용 | 421MB | **465MB** |
+| 피크 여유 RAM | 490MB | **102MB** |
+| Node.js RSS | 73.8MB | 74.5MB |
+| state 브로드캐스트 | 930회 | 2,550회 |
+| PM2 비정상 재시작 | 0 | 0 |
+
+### 실제 운영 예상 동시 접속
+
+| 역할 | 기기 수 |
+|---|---|
+| 주문서 (서빙) | 3~5대 |
+| 주방 디스플레이 | 1~2대 |
+| 테이블 현황 | 1~2대 |
+| 손님 예약 QR 피크 | 5~10명 |
+| **합계** | **약 15~20개** |
+
+→ 30 클라이언트 결과(16ms, 여유 RAM 490MB) 기준 충분한 여유. **t3.micro로 운영 가능 판정.**
+
+### 리스크 및 조치
+
+| 리스크 | 조치 |
+|---|---|
+| Swap 부재 → OOM Kill 위험 | **Swap 512MB 추가 완료** (`/etc/fstab` 영구 등록) |
+| orderHistory 무한 누적 | 테이블 해제 시 초기화됨 (회차당 수 KB 수준, 실운영 무관) |
+
+---
+
+## 서버 운영 가이드
+
+### 일상 운영 명령
+
+```bash
+# EC2 접속
 ssh -i ~/festival-swing-key.pem ubuntu@13.125.114.50
-```
 
-### 2. 서버 상태 확인
-
-```bash
+# 서버 상태 확인
 pm2 status
-```
 
-`festival` 앱이 `online` 이면 정상. `stopped` 이면:
+# 서버 재시작
+pm2 restart festival
 
-```bash
-cd ~/festival_SWing && pm2 start ecosystem.config.cjs
-```
+# 실시간 로그 확인
+pm2 logs festival --lines 50
 
-### 3. Nginx 상태 확인
-
-```bash
+# Nginx 상태
 sudo systemctl status nginx
-# 내려가 있으면:
-sudo systemctl start nginx
 ```
 
-### 4. 접속 확인
-
-브라우저에서 https://festival-swing.duckdns.org 로드 확인.
-
----
-
-## 비상 대응
+### 비상 대응
 
 | 상황 | 조치 |
 |---|---|
-| 앱이 응답 없음 | `pm2 restart festival` |
+| 앱 응답 없음 | `pm2 restart festival` |
 | 페이지 열리지 않음 | `sudo systemctl restart nginx` |
 | EC2 재부팅 후 | 자동 복구 (PM2 startup + Nginx systemd 등록됨) |
-| 주문 데이터 날아감 | 재시작 전 `/home/ubuntu/data/state.json` 자동 저장됨, 재시작 후 복원 |
-| 인증서 만료 | `~/.acme.sh/acme.sh --renew -d festival-swing.duckdns.org --force && sudo systemctl reload nginx` |
+| 주문 데이터 유실 우려 | `state.json` 자동 저장 (`/home/ubuntu/data/state.json`) |
+| SSL 인증서 만료 | `~/.acme.sh/acme.sh --renew -d festival-swing.duckdns.org --force && sudo systemctl reload nginx` |
+| 메모리 과다 사용 | `free -h` 확인 후 `pm2 restart festival` |
 
----
+### 행사 당일 체크리스트
 
-## 로컬 개발 환경
-
-```bash
-npm install
-npm run dev
-# 프론트엔드: http://localhost:5173
-# 백엔드:     http://localhost:3002
+```
+[ ] EC2 인스턴스 시작 확인 (중지 상태면 AWS 콘솔에서 시작)
+[ ] pm2 status → festival online 확인
+[ ] https://festival-swing.duckdns.org 브라우저 접속 확인
+[ ] 설정 탭 → 기본 제한 시간 확인 (120분)
+[ ] 설정 탭 → 품절 메뉴 사전 처리
+[ ] 전체 초기화 탭 → 이전 데이터 정리
+[ ] 각 테이블 QR 코드 부착 (→ /reserve)
 ```
 
-프로덕션 빌드 후 EC2 배포:
+### 로컬 개발 → EC2 배포
 
 ```bash
+# 1. 빌드
 npm run build
-rsync -az --delete dist/ ubuntu@13.125.114.50:~/festival_SWing/dist/
-rsync -az server/index.js ubuntu@13.125.114.50:~/festival_SWing/server/index.js
-ssh ubuntu@13.125.114.50 "pm2 restart festival"
+
+# 2. 정적 파일 배포
+rsync -av -e "ssh -i ~/festival-swing-key.pem" --delete \
+  dist/ ubuntu@13.125.114.50:/home/ubuntu/festival_SWing/dist/
+
+# 3. 서버 파일 배포
+rsync -av -e "ssh -i ~/festival-swing-key.pem" \
+  server/index.js shared/menu.js \
+  ubuntu@13.125.114.50:/home/ubuntu/festival_SWing/
+
+# 4. 재시작
+ssh -i ~/festival-swing-key.pem ubuntu@13.125.114.50 "pm2 restart festival"
 ```
 
----
-
-## 배포 구조
+### 배포 구조
 
 ```
 [브라우저] ──HTTPS 443──▶ [Nginx]
-                               │ HTTP 3002
+                               │ HTTP 3002 (WebSocket Upgrade)
                                ▼
                      [Node.js + Socket.io]  ← PM2 관리
-                               │
+                               │ 상태 변경마다 broadcastState()
                                ▼
-                     [state.json]  ← /home/ubuntu/data/state.json
+                     [state.json]  /home/ubuntu/data/state.json
 ```
-
-- SSL: ZeroSSL (acme.sh DNS-01, 자동 갱신)
-- 상태 영속성: PM2 재시작 후에도 주문·테이블·예약 데이터 유지
-- 모바일 최적화: pingTimeout 60s, reconnectionDelayMax 10s
 
 ---
 
@@ -229,13 +327,17 @@ ssh ubuntu@13.125.114.50 "pm2 restart festival"
 
 | 파일 | 설명 |
 |---|---|
-| `server/index.js` | Express + Socket.io 서버, 상태 관리 |
-| `shared/menu.js` | 메뉴 목록 (메뉴 변경 시 여기만 수정) |
-| `src/pages/OrderPage.jsx` | 주문서 탭 |
+| `server/index.js` | Express + Socket.io 서버, 소켓 이벤트 핸들러, 상태 관리 |
+| `shared/menu.js` | 메뉴 목록 정의 (메뉴 변경 시 이 파일만 수정) |
+| `src/pages/OrderPage.jsx` | 주문서 탭 (submitId 중복 방지, 입금자 입력) |
 | `src/pages/KitchenPage.jsx` | 주방 탭 |
-| `src/pages/SystemPage.jsx` | 테이블 현황 탭 |
-| `src/pages/SettingsPage.jsx` | 설정 탭 |
-| `src/pages/StatsPage.jsx` | 매출 탭 |
-| `src/pages/ReservePage.jsx` | 손님 주문 화면 |
+| `src/pages/SystemPage.jsx` | 테이블 현황 탭 (타이머, 내역 모달) |
+| `src/pages/SettingsPage.jsx` | 설정 탭 (타이머·품절) |
+| `src/pages/StatsPage.jsx` | 매출 탭 (URL 직접 접속 전용) |
+| `src/pages/ReservePage.jsx` | 손님 예약 화면 (`/reserve`, QR 배포용) |
+| `src/pages/ReservationsPage.jsx` | 운영자 예약 관리 탭 |
+| `src/pages/ManualPage.jsx` | 서버 매뉴얼 탭 |
+| `src/context/SocketContext.jsx` | Socket.io 클라이언트 전역 컨텍스트 |
+| `src/index.css` | 전체 스타일 (다크 테마, 반응형) |
 | `ecosystem.config.cjs` | PM2 설정 |
-| `nginx.conf` | Nginx 리버스 프록시 설정 |
+| `nginx.conf` | Nginx 리버스 프록시 + SSL 설정 |
