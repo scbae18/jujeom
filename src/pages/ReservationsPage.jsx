@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
 function formatWhen(ts) {
@@ -28,6 +28,28 @@ export default function ReservationsPage() {
   const [partySize, setPartySize] = useState("");
   const [error, setError] = useState("");
   const [confirmId, setConfirmId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const pendingTimerRef = useRef(null);
+
+  useEffect(() => () => { if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current); }, []);
+
+  const executePendingDelete = (id) => {
+    socket.emit("reservation:delete", id);
+    setPendingDelete(null);
+  };
+
+  const handleDeleteConfirm = () => {
+    const target = confirmTarget;
+    setConfirmId(null);
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    setPendingDelete({ id: target.id, name: target.name });
+    pendingTimerRef.current = setTimeout(() => executePendingDelete(target.id), 4000);
+  };
+
+  const cancelPendingDelete = () => {
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    setPendingDelete(null);
+  };
 
   const handleAdd = () => {
     setError("");
@@ -48,6 +70,12 @@ export default function ReservationsPage() {
 
   return (
     <div className="page reservations-page">
+      {pendingDelete && (
+        <div className="undo-toast">
+          <span>{pendingDelete.name} 예약 삭제 중…</span>
+          <button type="button" className="btn-secondary" onClick={cancelPendingDelete}>취소</button>
+        </div>
+      )}
       {confirmTarget && (
         <div className="modal-backdrop" role="presentation" onClick={() => setConfirmId(null)}>
           <div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
@@ -60,7 +88,7 @@ export default function ReservationsPage() {
               <button
                 type="button"
                 className="btn-danger"
-                onClick={() => { socket.emit("reservation:delete", confirmId); setConfirmId(null); }}
+                onClick={handleDeleteConfirm}
               >
                 삭제
               </button>

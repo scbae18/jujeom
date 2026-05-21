@@ -5,7 +5,7 @@ import { useAppSocket } from "../context/SocketContext.jsx";
  * 주문서 화면: 메뉴 수량, 품절 반영, 테이블 번호, 합계, 주문 완료
  */
 export default function OrderPage() {
-  const { socket, connected, state, toast } = useAppSocket();
+  const { socket, connected, state, toast, setToast } = useAppSocket();
   const [table, setTable] = useState("");
   const [partySize, setPartySize] = useState("");
   const [depositor, setDepositor] = useState("");
@@ -50,7 +50,12 @@ export default function OrderPage() {
   const submit = useCallback(() => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setToast("응답 없음 — 주방 화면에서 주문 상태를 확인하세요.");
+    }, 8000);
     socket.emit("order:submit", { table, quantities, partySize, depositor, submitId: submitIdRef.current }, (res) => {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
       if (res?.ok) {
         setQuantities({});
@@ -59,13 +64,18 @@ export default function OrderPage() {
         setDepositor("");
         setPaymentModalOpen(false);
         submitIdRef.current = null;
+      } else if (res?.error) {
+        setToast(res.error);
       }
     });
-  }, [socket, table, quantities, partySize, depositor, isSubmitting]);
+  }, [socket, table, quantities, partySize, depositor, isSubmitting, setToast]);
 
   useEffect(() => {
-    if (!connected) setIsSubmitting(false);
-  }, [connected]);
+    if (!connected && isSubmitting) {
+      setIsSubmitting(false);
+      setToast("연결이 끊겼습니다. 주문 상태를 주방 화면에서 확인하세요.");
+    }
+  }, [connected, isSubmitting, setToast]);
 
   useEffect(() => {
     if (!paymentModalOpen) return;
