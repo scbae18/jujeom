@@ -5,18 +5,12 @@ import KitchenPage from "./pages/KitchenPage.jsx";
 import SystemPage from "./pages/SystemPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
-import ReservePage from "./pages/ReservePage.jsx";
 import ReservationsPage from "./pages/ReservationsPage.jsx";
 import ResetAllPage from "./pages/ResetAllPage.jsx";
 import ManualPage from "./pages/ManualPage.jsx";
 
 function AppShell() {
   const { pathname } = useLocation();
-  /** 손님 예약 전용: 헤더·다른 탭 없음 */
-  if (pathname === "/reserve" || pathname.startsWith("/reserve/")) {
-    return <ReservePage />;
-  }
-
   const wideLayout =
     pathname === "/kitchen" ||
     pathname === "/system" ||

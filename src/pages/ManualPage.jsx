@@ -124,10 +124,9 @@ export default function ManualPage() {
       <section className="manual-section">
         <h2 className="manual-heading">예약 탭 사용법</h2>
         <ul className="manual-list">
-          <li>손님이 QR 코드(/reserve)로 접수한 예약 목록 실시간 확인</li>
+          <li>상단 등록 폼에 이름·전화번호·인원을 입력 후 <strong>등록</strong></li>
           <li>이름·인원·전화번호·접수 시각 표시</li>
           <li><strong>전화하기</strong> 버튼으로 해당 번호로 바로 전화 가능</li>
-          <li>상단 수기 등록 폼으로 현장에서 직접 예약 추가 가능</li>
           <li>테이블 안내 완료 후 <strong>삭제</strong> → 확인 모달 → <strong>4초 유예</strong> 후 삭제 실행</li>
           <li>유예 시간 안에 화면 하단 <strong>취소</strong> 버튼을 누르면 삭제 취소 가능</li>
         </ul>
