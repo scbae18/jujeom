@@ -55,16 +55,17 @@ export default function ManualPage() {
         <h2 className="manual-heading">주문서 탭 사용법</h2>
         <ol className="manual-list manual-list--ol">
           <li>테이블 번호 입력 (1~40)</li>
-          <li>인원수 입력 — 테이블 현황에 반영되므로 반드시 입력</li>
+          <li>인원수 입력 — 테이블 현황 카드에 반영되므로 반드시 입력</li>
           <li>입금자 이름 입력 — 테이블 카드에 표시됨</li>
           <li>메뉴 +/− 버튼으로 수량 선택</li>
-          <li>하단 <strong>주문 완료</strong> → 입금 확인 후 <strong>주문 완료</strong> 클릭</li>
+          <li>하단 <strong>주문 완료</strong> → 입금 확인 모달에서 검토 후 <strong>주문 완료</strong> 클릭</li>
         </ol>
         <div className="manual-warn">
           <p className="manual-warn-title">주의</p>
           <ul className="manual-list">
             <li>테이블 번호를 잘못 입력하면 타이머가 엉뚱한 테이블에 시작됨 — 입력 전 반드시 확인</li>
             <li>주문 완료 후 취소·수정 불가 — 입금 확인 모달에서 메뉴·수량 다시 검토</li>
+            <li>8초 안에 서버 응답이 없으면 화면에 안내 메시지가 표시됨 — 주방 화면에서 주문 접수 여부 확인</li>
             <li>연결 끊김 상태에서는 주문 완료 버튼이 비활성화됨 — 재연결 후 시도</li>
           </ul>
         </div>
@@ -92,6 +93,8 @@ export default function ManualPage() {
         <ul className="manual-list">
           <li>1~40번 테이블 전체를 한눈에 확인</li>
           <li>파란 테두리 — 이용 중 / 빨간 테두리 — 시간 초과</li>
+          <li>카드에 인원수·제한 시간·입금자·누적 금액 표시</li>
+          <li><strong>내역</strong> 버튼 — 해당 테이블의 주문 내역 및 누적 합계 조회</li>
           <li><strong>✕</strong> — 테이블 해제 (확인 모달 후 처리)</li>
         </ul>
         <div className="manual-warn">
@@ -106,14 +109,14 @@ export default function ManualPage() {
       <section className="manual-section">
         <h2 className="manual-heading">설정 탭 사용법</h2>
         <ul className="manual-list">
-          <li><strong>기본 제한 시간</strong> — 첫 주문 후 이 시간을 넘기면 시간 초과 표시 (기본 120분)</li>
-          <li><strong>품절 설정</strong> — 메뉴 버튼 클릭으로 판매중 ↔ 품절 즉시 전환</li>
+          <li><strong>기본 제한 시간</strong> — 첫 주문 후 이 시간을 넘기면 시간 초과 표시 (기본 120분), 변경 후 <strong>적용</strong> 버튼 클릭</li>
+          <li><strong>품절 설정</strong> — 메뉴 버튼 클릭으로 판매중 ↔ 품절 즉시 전환, 주문서에 실시간 반영</li>
         </ul>
         <div className="manual-warn">
           <p className="manual-warn-title">주의</p>
           <ul className="manual-list">
             <li>품절 처리된 메뉴는 주문서에서 선택 불가 — 영업 전 미리 설정</li>
-            <li>제한 시간 변경은 이후 주문부터 적용, 기존 타이머에는 소급 미적용</li>
+            <li>제한 시간 변경은 이후 주문부터 적용, 이미 진행 중인 타이머에는 소급 미적용</li>
           </ul>
         </div>
       </section>
@@ -123,14 +126,17 @@ export default function ManualPage() {
         <ul className="manual-list">
           <li>손님이 QR 코드(/reserve)로 접수한 예약 목록 실시간 확인</li>
           <li>이름·인원·전화번호·접수 시각 표시</li>
-          <li>테이블 안내 완료 후 <strong>삭제</strong> 버튼으로 제거</li>
+          <li><strong>전화하기</strong> 버튼으로 해당 번호로 바로 전화 가능</li>
+          <li>상단 수기 등록 폼으로 현장에서 직접 예약 추가 가능</li>
+          <li>테이블 안내 완료 후 <strong>삭제</strong> → 확인 모달 → <strong>4초 유예</strong> 후 삭제 실행</li>
+          <li>유예 시간 안에 화면 하단 <strong>취소</strong> 버튼을 누르면 삭제 취소 가능</li>
         </ul>
       </section>
 
       <section className="manual-section">
         <h2 className="manual-heading">전체 초기화</h2>
         <ul className="manual-list">
-          <li>주방 큐·테이블 타이머·매출·예약을 전부 초기화</li>
+          <li>주방 큐·테이블 타이머·매출·품절·예약을 전부 초기화</li>
           <li>영업 종료 후 다음 행사 준비 시 사용</li>
         </ul>
         <div className="manual-warn manual-warn--danger">
