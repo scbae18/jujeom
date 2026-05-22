@@ -6,6 +6,7 @@ import SystemPage from "./pages/SystemPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import StatsPage from "./pages/StatsPage.jsx";
 import ReservationsPage from "./pages/ReservationsPage.jsx";
+import ReservePage from "./pages/ReservePage.jsx";
 import ResetAllPage from "./pages/ResetAllPage.jsx";
 import ManualPage from "./pages/ManualPage.jsx";
 
@@ -66,10 +67,21 @@ function AppShell() {
   );
 }
 
+function ReserveLayout() {
+  return (
+    <main className="app-main app-main--reserve">
+      <ReservePage />
+    </main>
+  );
+}
+
 export default function App() {
   return (
     <SocketProvider>
-      <AppShell />
+      <Routes>
+        <Route path="/reserve" element={<ReserveLayout />} />
+        <Route path="/*" element={<AppShell />} />
+      </Routes>
     </SocketProvider>
   );
 }

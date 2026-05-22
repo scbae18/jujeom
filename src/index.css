@@ -154,6 +154,13 @@ select:focus {
   width: 100%;
 }
 
+.app-main--reserve {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  padding: 0;
+}
+
 .app-main--wide {
   max-width: 1600px;
 }
@@ -610,15 +617,31 @@ select:focus {
 
 .soldout-btn {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.85rem 1rem;
   border-radius: 12px;
   border: 2px solid var(--border);
   background: var(--surface);
   color: var(--text);
   text-align: left;
+}
+
+.soldout-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.soldout-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .soldout-btn.on {

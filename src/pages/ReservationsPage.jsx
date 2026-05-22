@@ -136,7 +136,12 @@ export default function ReservationsPage() {
         {error && <p className="reservation-form-error">{error}</p>}
       </div>
 
-      <p className="muted reservations-hint">접수된 순서대로 표시됩니다.</p>
+      <p className="muted reservations-hint">
+        접수된 순서대로 표시됩니다. 손님 자가 예약:{" "}
+        <a href="/reserve" target="_blank" rel="noopener noreferrer">
+          /reserve
+        </a>
+      </p>
 
       {list.length === 0 ? (
         <p className="muted">등록된 예약이 없습니다.</p>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
-const ALL_TABLES = Array.from({ length: 40 }, (_, i) => String(i + 1));
+const ALL_TABLES = Array.from({ length: 33 }, (_, i) => String(i + 1));
 
 function formatHM(ts) {
   return new Date(ts).toLocaleString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -28,6 +28,10 @@ export default function SystemPage() {
     setConfirmTable(null);
   }, [socket]);
 
+  const handleExtend = useCallback((table) => {
+    socket.emit("system:extendTable", table);
+  }, [socket]);
+
   useEffect(() => {
     const id = setInterval(() => setClock((c) => c + 1), 1000);
     return () => clearInterval(id);
@@ -42,14 +46,13 @@ export default function SystemPage() {
       if (!t || t.timerStartedAt == null) return { table, active: false };
       const bonus = Math.max(0, Math.floor(Number(t.bonusLimitMinutes) || 0));
       const partySize = Math.max(0, Math.floor(Number(t.partySize) || 0));
-      const depositors = String(t.depositors ?? "") || String(t.depositor ?? "");
       const totalAmount = Math.max(0, Math.floor(Number(t.totalAmount) || 0));
       const limitMin = defaultLimit + bonus;
       const elapsed = now - t.timerStartedAt;
       const limitMs = limitMin * 60 * 1000;
       const over = elapsed >= limitMs;
       const remaining = Math.max(0, limitMs - elapsed);
-      return { table, active: true, remaining, over, limitMin, partySize, depositors, totalAmount };
+      return { table, active: true, remaining, over, limitMin, partySize, totalAmount };
     });
   }, [state?.tables, defaultLimit, clock]);
 
@@ -121,11 +124,11 @@ export default function SystemPage() {
       <section className="tables-section">
         <h2 className="section-title large tables-section-title">
           테이블 현황
-          <span className="tc-count-badge">{activeCount} / 40 이용 중</span>
+          <span className="tc-count-badge">{activeCount} / 33 이용 중</span>
         </h2>
 
         <div className="table-grid">
-          {tableData.map(({ table, active, remaining, over, limitMin, partySize, depositors, totalAmount }) => (
+          {tableData.map(({ table, active, remaining, over, limitMin, partySize, totalAmount }) => (
             <div key={table} className={`table-card ${active ? (over ? "table-card--over" : "table-card--active") : "table-card--empty"}`}>
               <div className="tc-header">
                 <div className="tc-header-row">
@@ -156,8 +159,12 @@ export default function SystemPage() {
                   <div className="tc-meta">
                     <span>인원 {partySize > 0 ? `${partySize}명` : "—"}</span>
                     <span>제한 {limitMin}분</span>
-                    {depositors && <span>입금 {depositors}</span>}
                     {totalAmount > 0 && <span className="tc-amount">{totalAmount.toLocaleString()}원</span>}
+                  </div>
+                  <div className="tc-actions">
+                    <button type="button" className="btn-secondary tc-btn" onClick={() => handleExtend(table)}>
+                      시간 연장
+                    </button>
                   </div>
                 </>
               )}

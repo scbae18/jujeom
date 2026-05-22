@@ -15,8 +15,8 @@ export function SocketProvider({ children }) {
   const [toast, setToast] = useState(null);
 
   const socket = useMemo(() => {
-    const url = import.meta.env.DEV ? "http://127.0.0.1:3002" : undefined;
-    return io(url, { transports: ["websocket", "polling"], reconnectionDelayMax: 10000 });
+    // dev: Vite(5173) 프록시로 /socket.io → 3002 (CORS·StrictMode 이슈 방지)
+    return io({ transports: ["websocket", "polling"], reconnectionDelayMax: 10000 });
   }, []);
 
   useEffect(() => {
@@ -31,12 +31,14 @@ export function SocketProvider({ children }) {
     socket.on("disconnect", onDisconnect);
     socket.on("state", onState);
     socket.on("error:toast", onErr);
+    setConnected(socket.connected);
+    if (!socket.connected) socket.connect();
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("state", onState);
       socket.off("error:toast", onErr);
-      socket.disconnect();
+      // StrictMode가 effect를 두 번 돌릴 때 disconnect()하면 재연결이 안 됨
     };
   }, [socket]);
 

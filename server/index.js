@@ -9,7 +9,13 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Server } from "socket.io";
-import { MENU_LIST, COVER_MENU_ID, expandKitchenLines } from "../shared/menu.js";
+import {
+  MENU_LIST,
+  COVER_MENU_ID,
+  expandKitchenLines,
+  countSetQty,
+  requiredSetCount,
+} from "../shared/menu.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3002;
@@ -44,7 +50,7 @@ const state = {
   tables: /** @type {Record<string, { timerStartedAt: number | null, bonusLimitMinutes: number, coverQty: number }>} */ ({}),
   settings: {
     /** 경고까지 기본 허용 시간(분) */
-    defaultLimitMinutes: 120,
+    defaultLimitMinutes: 90,
     /** 「시간 연장」 한 번당 제한 시간에 더해지는 분(타이머는 그대로) */
     extensionMinutes: 60,
   },
@@ -152,7 +158,10 @@ function loadState() {
     if (Array.isArray(raw.soldOutIds)) state.soldOutIds = new Set(raw.soldOutIds);
     if (Array.isArray(raw.kitchenQueue)) state.kitchenQueue = raw.kitchenQueue;
     if (raw.tables && typeof raw.tables === "object") state.tables = raw.tables;
-    if (raw.settings?.defaultLimitMinutes) state.settings.defaultLimitMinutes = raw.settings.defaultLimitMinutes;
+    if (raw.settings?.defaultLimitMinutes != null)
+      state.settings.defaultLimitMinutes = raw.settings.defaultLimitMinutes;
+    if (raw.settings?.extensionMinutes != null)
+      state.settings.extensionMinutes = raw.settings.extensionMinutes;
     if (raw.salesStats) state.salesStats = { ...state.salesStats, ...raw.salesStats };
     if (Array.isArray(raw.reservations)) state.reservations = raw.reservations;
     console.log("[state] 저장된 상태를 복구했습니다.");
@@ -194,6 +203,18 @@ function submitOrder(tableRaw, items, partySize, depositor) {
   for (const it of items) {
     if (state.soldOutIds.has(it.menuId)) {
       return { ok: false, error: `품절 메뉴가 포함되어 있습니다: ${it.name}` };
+    }
+  }
+
+  const tableExists = Boolean(state.tables[table]);
+  const isFirstOrder = !tableExists || state.tables[table].timerStartedAt == null;
+  if (isFirstOrder) {
+    const hasBase = items.some((it) => {
+      const m = MENU_LIST.find((x) => x.id === it.menuId);
+      return m && !m.addonOnly;
+    });
+    if (!hasBase) {
+      return { ok: false, error: "첫 주문에는 세트 또는 자릿세가 포함되어야 합니다." };
     }
   }
 
@@ -247,13 +268,32 @@ function submitOrder(tableRaw, items, partySize, depositor) {
     ts.timerStartedAt = Date.now();
   } else {
     const defaultLimit = Math.max(1, Math.floor(Number(state.settings.defaultLimitMinutes) || 90));
-    const limitMs = (defaultLimit + Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0))) * 60 * 1000;
-    if (Date.now() - ts.timerStartedAt >= limitMs) {
-      ts.timerStartedAt = Date.now();
-      ts.bonusLimitMinutes = 0;
+    const bonus = Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0));
+    const limitMs = (defaultLimit + bonus) * 60 * 1000;
+    const elapsed = Date.now() - ts.timerStartedAt;
+    if (elapsed >= limitMs) {
+      const ps = partySize > 0 ? partySize : Math.max(0, Math.floor(Number(ts.partySize) || 0));
+      const setQty = countSetQty(items);
+      const need = requiredSetCount(ps);
+      if (setQty >= need && need > 0) {
+        const ext = Math.max(1, Math.floor(Number(state.settings.extensionMinutes) || 60));
+        ts.bonusLimitMinutes = bonus + ext;
+      }
     }
   }
 
+  return { ok: true };
+}
+
+function extendTableLimit(tableRaw) {
+  const table = String(tableRaw).trim();
+  if (!table) return { ok: false, error: "테이블 번호가 없습니다." };
+  const ts = state.tables[table];
+  if (!ts || ts.timerStartedAt == null) {
+    return { ok: false, error: "이용 중인 테이블이 아닙니다." };
+  }
+  const ext = Math.max(1, Math.floor(Number(state.settings.extensionMinutes) || 60));
+  ts.bonusLimitMinutes = Math.max(0, Math.floor(Number(ts.bonusLimitMinutes) || 0)) + ext;
   return { ok: true };
 }
 
@@ -364,6 +404,18 @@ io.on("connection", (socket) => {
   socket.on("system:setDefaultLimitMinutes", (minutes) => {
     state.settings.defaultLimitMinutes = Math.max(1, Math.floor(Number(minutes) || 90));
     broadcastState();
+  });
+
+  socket.on("system:setExtensionMinutes", (minutes) => {
+    state.settings.extensionMinutes = Math.max(1, Math.floor(Number(minutes) || 60));
+    broadcastState();
+  });
+
+  socket.on("system:extendTable", (tableRaw, ack) => {
+    const res = extendTableLimit(tableRaw);
+    if (res.ok) broadcastState();
+    if (typeof ack === "function") ack(res);
+    if (!res.ok && res.error) socket.emit("error:toast", res.error);
   });
 
   socket.on("reservation:create", (payload, ack) => {

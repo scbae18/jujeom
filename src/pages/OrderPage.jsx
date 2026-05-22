@@ -8,7 +8,6 @@ export default function OrderPage() {
   const { socket, connected, state, toast, setToast } = useAppSocket();
   const [table, setTable] = useState("");
   const [partySize, setPartySize] = useState("");
-  const [depositor, setDepositor] = useState("");
   /** menuId -> 수량 */
   const [quantities, setQuantities] = useState({});
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -54,21 +53,20 @@ export default function OrderPage() {
       setIsSubmitting(false);
       setToast("응답 없음 — 주방 화면에서 주문 상태를 확인하세요.");
     }, 8000);
-    socket.emit("order:submit", { table, quantities, partySize, depositor, submitId: submitIdRef.current }, (res) => {
+    socket.emit("order:submit", { table, quantities, partySize, submitId: submitIdRef.current }, (res) => {
       clearTimeout(timeoutId);
       setIsSubmitting(false);
       if (res?.ok) {
         setQuantities({});
         setTable("");
         setPartySize("");
-        setDepositor("");
         setPaymentModalOpen(false);
         submitIdRef.current = null;
       } else if (res?.error) {
         setToast(res.error);
       }
     });
-  }, [socket, table, quantities, partySize, depositor, isSubmitting, setToast]);
+  }, [socket, table, quantities, partySize, isSubmitting, setToast]);
 
   useEffect(() => {
     if (!connected && isSubmitting) {
@@ -88,16 +86,15 @@ export default function OrderPage() {
 
   const canSubmit = connected && lines.length > 0 && table.trim().length > 0 && Number(partySize) >= 1;
 
+  const CATEGORY_ORDER = ["자릿세", "세트", "메인", "사이드"];
+
   const byCategory = useMemo(() => {
     const map = new Map();
     for (const m of menu) {
       if (!map.has(m.category)) map.set(m.category, []);
       map.get(m.category).push(m);
     }
-    return [...map.entries()].map(([cat, items]) => [
-      cat,
-      cat === "사이드" ? [...items].sort((a, b) => b.price - a.price) : items,
-    ]);
+    return CATEGORY_ORDER.filter((cat) => map.has(cat)).map((cat) => [cat, map.get(cat)]);
   }, [menu]);
 
 
@@ -145,7 +142,7 @@ export default function OrderPage() {
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
-              placeholder="예: 5, 12"
+              placeholder="예: 5, 12 (1~33)"
               value={table}
               onChange={(e) => setTable(e.target.value.replace(/\D/g, ""))}
               className="field-input"
@@ -165,18 +162,6 @@ export default function OrderPage() {
               className="field-input"
             />
           </label>
-          <label className="field-label">
-            입금자
-            <input
-              type="text"
-              autoComplete="off"
-              placeholder="이름"
-              maxLength={40}
-              value={depositor}
-              onChange={(e) => setDepositor(e.target.value)}
-              className="field-input"
-            />
-          </label>
         </div>
         <span className={`conn ${connected ? "ok" : ""}`}>{connected ? "연결됨" : "연결 끊김"}</span>
       </div>
@@ -190,11 +175,16 @@ export default function OrderPage() {
               {items.map((m) => {
                 const sold = soldSet.has(m.id);
                 const q = Math.max(0, Math.floor(Number(quantities[m.id]) || 0));
+                const addon = Boolean(m.addonOnly);
                 return (
-                  <li key={m.id} className={`menu-row ${sold ? "soldout" : ""}`}>
+                  <li key={m.id} className={`menu-row ${sold ? "soldout" : ""} ${addon ? "addon-hint" : ""}`}>
                     <div className="menu-info">
-                      <span className="menu-name">{m.name}</span>
+                      <span className="menu-name">
+                        {m.name}
+                        {m.description ? ` — ${m.description}` : ""}
+                      </span>
                       <span className="menu-price">{m.price.toLocaleString()}원</span>
+                      {addon && <span className="badge-addon">추가 주문만</span>}
                       {sold && <span className="badge-sold">주문 불가</span>}
                     </div>
                     <div className="qty-controls">
