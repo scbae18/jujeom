@@ -439,6 +439,19 @@ select:focus {
   font-weight: 600;
 }
 
+.menu-row.friend-hint {
+  border-color: rgba(180, 140, 60, 0.45);
+}
+
+.badge-friend {
+  font-size: 0.75rem;
+  background: rgba(180, 140, 60, 0.18);
+  color: #d4a84b;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
 .menu-info {
   flex: 1;
   min-width: 0;

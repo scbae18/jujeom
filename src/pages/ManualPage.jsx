@@ -178,6 +178,7 @@ export default function ManualPage() {
       <section className="manual-section">
         <h2 className="manual-heading">전체 초기화</h2>
         <ul className="manual-list">
+          <li>상단 탭 없음 — 주소 <strong>/reset</strong>으로만 접속</li>
           <li>주방 큐·테이블 타이머·매출·품절·예약을 전부 초기화</li>
           <li>영업 종료 후 다음 행사 준비 시 사용</li>
         </ul>

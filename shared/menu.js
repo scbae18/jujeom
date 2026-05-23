@@ -1,6 +1,7 @@
 /**
  * 메뉴 목록 — 운영 시 이 배열만 수정하면 됩니다.
  * addonOnly: true → 추가 주문만 가능 (첫 주문에는 세트·자릿세 필요).
+ * friendService: true → 지인서비스(가격 없음, 매출 0원).
  * kitchenParts: 세트 주문 시 주방 큐에 펼쳐 넣을 구성 메뉴명.
  */
 export const COVER_MENU_ID = 1;
@@ -68,6 +69,13 @@ export const MENU_LIST = [
   { id: 11, name: "나쵸", price: 6900, category: "사이드", addonOnly: true },
   { id: 12, name: "계란찜", price: 6900, category: "사이드", addonOnly: true },
   { id: 13, name: "콘치즈", price: 6900, category: "사이드", addonOnly: true },
+  {
+    id: 14,
+    name: "오지치즈프라이",
+    price: 0,
+    category: "지인서비스",
+    friendService: true,
+  },
 ];
 
 /**

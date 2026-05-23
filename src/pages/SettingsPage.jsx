@@ -77,7 +77,7 @@ export default function SettingsPage() {
           </label>
         </div>
         <p className="muted small">
-          전체 데이터를 비우려면 상단 메뉴의 「전체 초기화」를 이용하세요.
+          전체 데이터를 비우려면 주소 <strong>/reset</strong>으로 직접 이동하세요.
         </p>
       </section>
 

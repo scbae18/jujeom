@@ -45,9 +45,6 @@ function AppShell() {
           <NavLink className={({ isActive }) => (isActive ? "nav-a active" : "nav-a")} to="/manual">
             매뉴얼
           </NavLink>
-          <NavLink className={({ isActive }) => (isActive ? "nav-a active nav-a--reset" : "nav-a nav-a--reset")} to="/reset">
-            전체 초기화
-          </NavLink>
         </nav>
       </header>
       <main className={`app-main${wideLayout ? " app-main--wide" : ""}`}>

@@ -86,7 +86,7 @@ export default function OrderPage() {
 
   const canSubmit = connected && lines.length > 0 && table.trim().length > 0 && Number(partySize) >= 1;
 
-  const CATEGORY_ORDER = ["자릿세", "세트", "메인", "사이드"];
+  const CATEGORY_ORDER = ["자릿세", "세트", "메인", "사이드", "지인서비스"];
 
   const byCategory = useMemo(() => {
     const map = new Map();
@@ -176,14 +176,18 @@ export default function OrderPage() {
                 const sold = soldSet.has(m.id);
                 const q = Math.max(0, Math.floor(Number(quantities[m.id]) || 0));
                 const addon = Boolean(m.addonOnly);
+                const friend = Boolean(m.friendService);
                 return (
-                  <li key={m.id} className={`menu-row ${sold ? "soldout" : ""} ${addon ? "addon-hint" : ""}`}>
+                  <li
+                    key={m.id}
+                    className={`menu-row ${sold ? "soldout" : ""} ${addon ? "addon-hint" : ""} ${friend ? "friend-hint" : ""}`}
+                  >
                     <div className="menu-info">
                       <span className="menu-name">
                         {m.name}
                         {m.description ? ` — ${m.description}` : ""}
                       </span>
-                      <span className="menu-price">{m.price.toLocaleString()}원</span>
+                      <span className="menu-price">{friend ? "지인서비스" : `${m.price.toLocaleString()}원`}</span>
                       {addon && <span className="badge-addon">추가 주문만</span>}
                       {sold && <span className="badge-sold">주문 불가</span>}
                     </div>
@@ -213,7 +217,10 @@ export default function OrderPage() {
             <ul className="cart-lines">
               {lines.map((l) => (
                 <li key={l.id}>
-                  {l.name} × {l.qty} <span className="sub">{(l.price * l.qty).toLocaleString()}원</span>
+                  {l.name} × {l.qty}{" "}
+                  <span className="sub">
+                    {l.friendService ? "지인서비스" : `${(l.price * l.qty).toLocaleString()}원`}
+                  </span>
                 </li>
               ))}
             </ul>

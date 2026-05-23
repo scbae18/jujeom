@@ -211,7 +211,7 @@ function submitOrder(tableRaw, items, partySize, depositor) {
   if (isFirstOrder) {
     const hasBase = items.some((it) => {
       const m = MENU_LIST.find((x) => x.id === it.menuId);
-      return m && !m.addonOnly;
+      return m && !m.addonOnly && !m.friendService;
     });
     if (!hasBase) {
       return { ok: false, error: "첫 주문에는 세트 또는 자릿세가 포함되어야 합니다." };
