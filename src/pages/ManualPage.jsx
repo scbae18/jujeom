@@ -123,17 +123,17 @@ export default function ManualPage() {
       <section className="manual-section">
         <h2 className="manual-heading">테이블 현황 탭 사용법</h2>
         <ul className="manual-list">
-          <li>1~33번 테이블 전체를 한눈에 확인</li>
+          <li><strong>이용 중</strong> / <strong>전체 33</strong> 탭 — 폰에서는 기본이 「이용 중」만 표시</li>
+          <li><strong>테이블 번호 → 이동</strong> — 번호 입력 후 해당 카드로 스크롤 (빈 테이블은 「전체 33」으로 전환)</li>
+          <li>폰: 이용 중 카드를 <strong>탭</strong>하면 하단 시트에서 연장·내역·해제 (잘못 누르기 방지)</li>
+          <li>넓은 화면: 8열 그리드, 카드에 내역·✕·시간 연장 버튼</li>
           <li>파란 테두리 — 이용 중 / 빨간 테두리 — 시간 초과</li>
-          <li>카드에 인원수·제한 시간(기본+연장)·누적 금액 표시</li>
-          <li><strong>시간 연장</strong> — 제한 시간에 연장 분을 더함 (세트 추가 주문·안내 후 사용)</li>
-          <li><strong>내역</strong> 버튼 — 해당 테이블의 주문 내역 및 누적 합계 조회</li>
-          <li><strong>✕</strong> — 테이블 해제 (확인 모달 후 처리)</li>
+          <li><strong>테이블 해제</strong> — 확인 모달 후 타이머·주방 주문 초기화</li>
         </ul>
         <div className="manual-warn">
           <p className="manual-warn-title">주의</p>
           <ul className="manual-list">
-            <li>✕ 버튼은 타이머·주방 주문 모두 초기화됨 — 손님이 자리를 완전히 떠난 뒤 클릭</li>
+            <li>테이블 해제는 타이머·주방 주문 모두 초기화됨 — 손님이 자리를 완전히 떠난 뒤 실행</li>
             <li>시간 초과 후 인원별 세트 수 이상 주문이 접수되면 연장 분이 자동 가산될 수 있음</li>
             <li>연장은 「시간 연장」 버튼으로도 수동 적용 가능 — 세트 주문·입금 확인 후 진행</li>
           </ul>
