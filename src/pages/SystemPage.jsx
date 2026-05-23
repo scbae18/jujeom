@@ -36,7 +36,8 @@ export default function SystemPage() {
   const { socket, connected, state } = useAppSocket();
   const mobile = useMobileLayout();
   const [clock, setClock] = useState(0);
-  const [confirmTable, setConfirmTable] = useState(null);
+  /** @type {{ type: 'extend' | 'reset', table: string } | null} */
+  const [pendingAction, setPendingAction] = useState(null);
   const [historyTable, setHistoryTable] = useState(null);
   const [sheetTable, setSheetTable] = useState(null);
   const [viewMode, setViewMode] = useState(() =>
@@ -48,14 +49,24 @@ export default function SystemPage() {
   const cardRefs = useRef(/** @type {Record<string, HTMLDivElement | null>} */ ({}));
   const pendingJump = useRef(null);
 
+  const requestExtend = useCallback((table) => {
+    setPendingAction({ type: "extend", table });
+  }, []);
+
+  const requestReset = useCallback((table) => {
+    setPendingAction({ type: "reset", table });
+  }, []);
+
   const handleReset = useCallback((table) => {
     socket.emit("system:resetTable", table);
-    setConfirmTable(null);
+    setPendingAction(null);
     setSheetTable(null);
   }, [socket]);
 
   const handleExtend = useCallback((table) => {
     socket.emit("system:extendTable", table);
+    setPendingAction(null);
+    setSheetTable(null);
   }, [socket]);
 
   useEffect(() => {
@@ -68,6 +79,7 @@ export default function SystemPage() {
   }, [mobile]);
 
   const defaultLimit = state?.settings?.defaultLimitMinutes ?? 90;
+  const extensionMin = state?.settings?.extensionMinutes ?? 60;
 
   const tableData = useMemo(() => {
     const now = Date.now();
@@ -181,7 +193,7 @@ export default function SystemPage() {
                   type="button"
                   className="tc-close"
                   aria-label="테이블 할당 해제"
-                  onClick={() => setConfirmTable(table)}
+                  onClick={() => requestReset(table)}
                 >
                   ✕
                 </button>
@@ -205,7 +217,7 @@ export default function SystemPage() {
             </div>
             {!mobile && (
               <div className="tc-actions">
-                <button type="button" className="btn-secondary tc-btn" onClick={() => handleExtend(table)}>
+                <button type="button" className="btn-secondary tc-btn" onClick={() => requestExtend(table)}>
                   시간 연장
                 </button>
               </div>
@@ -218,24 +230,12 @@ export default function SystemPage() {
 
   return (
     <div className={`page system-page${mobile ? " system-page--mobile" : ""}`}>
-      {confirmTable && (
-        <div className="modal-backdrop" role="presentation" onClick={() => setConfirmTable(null)}>
-          <div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
-            <h2 className="modal-title">{confirmTable}번 테이블 해제</h2>
-            <p className="modal-body">타이머와 주방 주문이 모두 초기화됩니다. 계속할까요?</p>
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={() => setConfirmTable(null)}>
-                취소
-              </button>
-              <button type="button" className="btn-danger" onClick={() => handleReset(confirmTable)}>
-                해제
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {sheetTable && sheetRow?.active && (
-        <div className="table-sheet-backdrop" role="presentation" onClick={() => setSheetTable(null)}>
+        <div
+          className={`table-sheet-backdrop${pendingAction ? " table-sheet-backdrop--under-modal" : ""}`}
+          role="presentation"
+          onClick={() => !pendingAction && setSheetTable(null)}
+        >
           <div
             className="table-sheet"
             role="dialog"
@@ -263,7 +263,7 @@ export default function SystemPage() {
               )}
             </div>
             <div className="table-sheet-actions">
-              <button type="button" className="btn-secondary btn-block table-sheet-btn" onClick={() => handleExtend(sheetTable)}>
+              <button type="button" className="btn-secondary btn-block table-sheet-btn" onClick={() => requestExtend(sheetTable)}>
                 시간 연장
               </button>
               <button
@@ -279,10 +279,7 @@ export default function SystemPage() {
               <button
                 type="button"
                 className="btn-danger btn-block table-sheet-btn"
-                onClick={() => {
-                  setSheetTable(null);
-                  setConfirmTable(sheetTable);
-                }}
+                onClick={() => requestReset(sheetTable)}
               >
                 테이블 해제
               </button>
@@ -290,6 +287,51 @@ export default function SystemPage() {
                 닫기
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {pendingAction && (
+        <div
+          className="modal-backdrop modal-backdrop--over-sheet"
+          role="presentation"
+          onClick={() => setPendingAction(null)}
+        >
+          <div className="modal-panel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            {pendingAction.type === "extend" ? (
+              <>
+                <h2 className="modal-title">{pendingAction.table}번 시간 연장</h2>
+                <p className="modal-body">
+                  연장하시겠습니까?
+                  <br />
+                  <span className="muted small">제한 시간에 {extensionMin}분이 추가됩니다.</span>
+                </p>
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setPendingAction(null)}>
+                    취소
+                  </button>
+                  <button type="button" className="btn-primary" onClick={() => handleExtend(pendingAction.table)}>
+                    연장
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="modal-title">{pendingAction.table}번 테이블 해제</h2>
+                <p className="modal-body">
+                  테이블을 해제하시겠습니까?
+                  <br />
+                  <span className="muted small">타이머와 주방 주문이 모두 초기화됩니다.</span>
+                </p>
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setPendingAction(null)}>
+                    취소
+                  </button>
+                  <button type="button" className="btn-danger" onClick={() => handleReset(pendingAction.table)}>
+                    해제
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

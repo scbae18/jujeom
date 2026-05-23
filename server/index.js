@@ -16,6 +16,7 @@ import {
   countSetQty,
   requiredSetCount,
 } from "../shared/menu.js";
+import { validateTableNumber } from "../shared/tables.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3002;
@@ -196,8 +197,9 @@ function recordSalesFromItems(items) {
  * 주문 접수: 주방 큐 추가. 타이머는 해당 테이블에 처음 주문이 들어올 때만 시작(추가 주문은 타이머 건드리지 않음).
  */
 function submitOrder(tableRaw, items, partySize, depositor) {
-  const table = String(tableRaw).trim();
-  if (!table) return { ok: false, error: "테이블 번호를 입력하세요." };
+  const tableCheck = validateTableNumber(tableRaw);
+  if (!tableCheck.ok) return tableCheck;
+  const table = tableCheck.table;
   if (!items.length) return { ok: false, error: "주문할 메뉴를 선택하세요." };
 
   for (const it of items) {

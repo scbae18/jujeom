@@ -1,6 +1,7 @@
 :root {
   --bg: #0f1419;
   --surface: #1a222d;
+  --card-bg: #1a222d;
   --border: #2d3a4d;
   --text: #e8eef5;
   --muted: #8b9cb3;
@@ -231,6 +232,15 @@ select:focus {
   backdrop-filter: blur(2px);
 }
 
+/* 하단 시트(z-index 200) 위에 확인 모달 */
+.modal-backdrop.modal-backdrop--over-sheet {
+  z-index: 300;
+}
+
+.table-sheet-backdrop--under-modal {
+  pointer-events: none;
+}
+
 .modal-panel {
   width: 100%;
   max-width: 22rem;
@@ -370,6 +380,18 @@ select:focus {
   gap: 0.35rem;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.field-input--invalid {
+  border-color: var(--danger);
+}
+
+.field-hint {
+  font-size: 0.8rem;
+}
+
+.field-hint--error {
+  color: var(--danger);
 }
 
 .field-input.wide {
@@ -1477,7 +1499,7 @@ a.reservation-call {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1494,7 +1516,18 @@ a.reservation-call {
   padding: 0.75rem 1.15rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
   border: 1px solid var(--border);
   border-bottom: none;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
   animation: sheet-slide-up 0.22s ease-out;
+}
+
+@media (max-width: 640px) {
+  .table-sheet-backdrop {
+    background: #0a0e12;
+  }
+
+  .table-sheet {
+    background: var(--surface);
+  }
 }
 
 @keyframes sheet-slide-up {

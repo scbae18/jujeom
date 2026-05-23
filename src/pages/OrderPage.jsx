@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isValidTableNumber } from "@shared/tables.js";
 import { useAppSocket } from "../context/SocketContext.jsx";
 
 /**
@@ -84,7 +85,8 @@ export default function OrderPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [paymentModalOpen]);
 
-  const canSubmit = connected && lines.length > 0 && table.trim().length > 0 && Number(partySize) >= 1;
+  const tableValid = isValidTableNumber(table);
+  const canSubmit = connected && lines.length > 0 && tableValid && Number(partySize) >= 1;
 
   const CATEGORY_ORDER = ["자릿세", "세트", "메인", "사이드", "지인서비스"];
 
@@ -126,7 +128,7 @@ export default function OrderPage() {
               <button type="button" className="btn-secondary" onClick={() => setPaymentModalOpen(false)} disabled={isSubmitting}>
                 취소
               </button>
-              <button type="button" className="btn-primary" onClick={submit} disabled={!connected || isSubmitting}>
+              <button type="button" className="btn-primary" onClick={submit} disabled={!connected || !tableValid || isSubmitting}>
                 {isSubmitting ? "처리 중…" : "주문 완료"}
               </button>
             </div>
@@ -143,10 +145,15 @@ export default function OrderPage() {
               pattern="[0-9]*"
               autoComplete="off"
               placeholder="예: 5, 12 (1~33)"
+              maxLength={2}
               value={table}
               onChange={(e) => setTable(e.target.value.replace(/\D/g, ""))}
-              className="field-input"
+              className={`field-input${table.length > 0 && !tableValid ? " field-input--invalid" : ""}`}
+              aria-invalid={table.length > 0 && !tableValid}
             />
+            {table.length > 0 && !tableValid && (
+              <span className="field-hint field-hint--error">1~33번 테이블만 주문할 수 있습니다.</span>
+            )}
           </label>
           <label className="field-label">
             인원수
